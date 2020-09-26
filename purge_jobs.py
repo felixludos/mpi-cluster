@@ -1,0 +1,37 @@
+
+import sys, os, shutil
+
+import sys, os
+import shutil
+
+import omnibelt as util
+
+import omnifig as fig
+
+from src import fmt_jobdir
+
+@fig.AutoScript('purge-jobs', description='Clears the jobs directory')
+def purge_jobs(jobdir=None, ask_confirm=False):
+
+	jobdir = fmt_jobdir(jobdir)
+	
+	if ask_confirm:
+		response = input(f'really empty {jobdir}? y/[n] ')
+		if response != 'y':
+			print('Did nothing.')
+			return 0
+	
+	if os.path.isfile(jobdir):
+		return 0
+	
+	shutil.rmtree(jobdir)
+	os.mkdir(jobdir)
+	
+	print(f'{jobdir} purged.')
+
+	return 0
+
+if __name__ == '__main__':
+	fig.entry('purge_jobs')
+
+
