@@ -13,18 +13,21 @@ from src.cluster import COLATTRS
 @fig.Script('status', description='check the status of jobs submitted to the cluster')
 def get_status(A):
 	
-	user = A.pull('user', 'fleeb')
+	silent = A.pull('silent', False, silent=True)
 	
-	data = collect_q_cmd(user)
+	user = A.pull('user', 'fleeb', silent=silent)
 	
-	cols = A.pull('columns', ['status', 'jnum', 'jexe', 'host'])
+	data = collect_q_cmd(user, silent=silent)
+	
+	cols = A.pull('columns', ['status', 'ID', 'jnum', 'jexe', 'host'], silent=silent)
 	
 	rows = []
 	
-	for info in data:
-		rows.append([info.get(key, 'N/A') for key in cols])
-	
-	print(tabulate(rows, headers=cols))
+	if data is not None:
+		for info in data:
+			rows.append([info.get(key, 'N/A') for key in cols])
+		
+		print(tabulate(rows, headers=cols))
 	
 	return data
 

@@ -59,8 +59,9 @@ def parse_job_status(raw):
 	return info
 
 
-def collect_q_cmd(user):
-	print('Getting job status ... ', end='')
+def collect_q_cmd(user, silent=False):
+	if not silent:
+		print('Getting job status ... ', end='')
 	
 	try:
 		
@@ -68,15 +69,18 @@ def collect_q_cmd(user):
 		raw = subprocess.check_output(['condor_q', user, '-af:t'] + COLATTRS).decode()
 	
 	except FileNotFoundError:
-		print('FAILED')
+		if not silent:
+			print('FAILED')
 		return None
 	
 	if len(raw) == 0:
-		print('No jobs running.')
+		if not silent:
+			print('No jobs running.')
 		return None
 	else:
 		lines = raw.split('\n')
-		print(f'found {len(lines) - 1} jobs')
+		if not silent:
+			print(f'found {len(lines) - 1} jobs')
 	
 	# print(lines)
 	
