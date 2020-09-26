@@ -7,20 +7,7 @@ from datetime import datetime
 import omnibelt as belt
 import humpack as hp
 
-
-COLATTRS = ['ClusterId', 'ProcId', 'JobStatus', 'Args', 'RemoteHost']
-
-STATUS_CODES = {
-	'0': 'Unexpanded',
-	'1': 'Idle',
-	'2': 'Running',
-	'3': 'Removed',
-	'4': 'Completed',
-	'5': 'Held',
-	'6': 'Submission_err',
-	
-}
-
+from .cluster import STATUS_CODES, COLATTRS
 
 def parse_jobexec(raw, info=None):
 	*root, jdir, jexe = raw.split('/')
@@ -72,13 +59,13 @@ def parse_job_status(raw):
 	return info
 
 
-def collect_q_cmd():
+def collect_q_cmd(user):
 	print('Getting job status ... ', end='')
 	
 	try:
 		
 		# raw = subprocess.check_output(['condor_q', 'fleeb', '-af', 'ClusterId', 'ProcId', 'Args', 'JobStatus', 'RemoteHost', 'Env'])
-		raw = subprocess.check_output(['condor_q', 'fleeb', '-af:t'] + COLATTRS).decode()
+		raw = subprocess.check_output(['condor_q', user, '-af:t'] + COLATTRS).decode()
 	
 	except FileNotFoundError:
 		print('FAILED')
@@ -89,7 +76,7 @@ def collect_q_cmd():
 		return None
 	else:
 		lines = raw.split('\n')
-		print('found {} jobs'.format(len(lines) - 1))
+		print(f'found {len(lines) - 1} jobs')
 	
 	# print(lines)
 	

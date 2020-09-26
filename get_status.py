@@ -6,29 +6,28 @@ from tabulate import tabulate
 
 import omnifig as fig
 
-from src import fmt_jobdir
+from src import fmt_jobdir, collect_q_cmd
+from src.cluster import COLATTRS
 
 
 @fig.Script('status', description='check the status of jobs submitted to the cluster')
 def get_status(A):
-	collect_q_cmd()
 	
-	pass
+	user = A.pull('user', 'fleeb')
+	
+	data = collect_q_cmd(user)
+	
+	cols = A.pull('columns', ['status', 'jnum', 'jexe', 'host'])
+	
+	rows = []
+	
+	for info in data:
+		rows.append([info.get(key, 'N/A') for key in cols])
+	
+	print(tabulate(rows, headers=cols))
+	
+	return data
 
-
-def old_get_status(jobdir=None, save_dir=None):
-	
-	jobdir = fmt_jobdir(jobdir)
-	
-	if save_dir is None:
-		if 'FOUNDATION_SAVE_DIR' in os.environ:
-			save_dir = os.environ['FOUNDATION_SAVE_DIR']
-		else:
-			print('WARNING: no trained nets path found')
-	
-	
-	
-	pass
 
 if __name__ == '__main__':
 	fig.entry('status')
