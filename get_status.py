@@ -13,7 +13,7 @@ from src.cluster import COLATTRS
 @fig.Script('status', description='check the status of jobs submitted to the cluster')
 def get_status(A):
 	
-	silent = A.pull('silent', True, silent=True)
+	silent = A.pull('silent', False, silent=True)
 	
 	user = A.pull('user', 'fleeb', silent=silent)
 	
