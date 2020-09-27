@@ -1,8 +1,8 @@
 
 
-cmd_path: /home/fleeb/scripts/run_n.sh
+cmd_path: /home/fleeb/workspace/mpi-cluster/run_n.sh
 
-template: /home/fleeb/scripts/template.sh
+template: /home/fleeb/workspace/mpi-cluster/template.sh
 
 dir: /home/fleeb/workspace/learn_rep
 
