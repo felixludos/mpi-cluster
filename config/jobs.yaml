@@ -1,6 +1,6 @@
 
 
-script: /home/fleeb/scripts/run_n.sh
+cmd_path: /home/fleeb/scripts/run_n.sh
 
 template: /home/fleeb/scripts/template.sh
 
