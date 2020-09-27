@@ -5,18 +5,24 @@ import omnibelt as util
 
 import omnifig as fig
 
-from src import fmt_jobdir
+from src import fmt_jobdir, GPU_NAMES, SUBMISSION_FORMAT
 
+@fig.AutoScript('git-pull', description='Pull several git repos')
+def git_update(git_repos=None):
+	if git_repos is not None and isinstance(git_repos, (list, tuple)):
+		for gd in git_repos:
+			os.system(f'cd {gd};git pull')
+	return git_repos
 
-
-@fig.AutoScript('create_job')
-def create_job(name=None, cmd=None, cmd_path=None, bid=None,
-               jobdir=None, template=None, rerun=None,
-               time_limit=None, avoid=None,
-               cpu=1, gpu=0, ram=1, gpu_names=None,
-               git_dirs=None, auto_pull=True,
-               manifest_path=None, array_jobs=True,
-               interactive=False, ask_confirm=True):
+@fig.AutoScript('submit', description='Submit jobs to the cluster')
+def create_job(
+		name=None, cmd=None, cmd_path=None, bid=None,
+       jobdir=None, template=None, rerun=None,
+       time_limit=None, avoid=None,
+       cpu=1, gpu=0, ram=1, gpu_names=None,
+       git_repos=None, manifest_path=None, array_jobs=True,
+       interactive=False, skip_confirm=False
+               ):
 	'''
 
 	:param name: Name of job (will be set automatically if not provided)
@@ -37,11 +43,11 @@ def create_job(name=None, cmd=None, cmd_path=None, bid=None,
 	:param manifest_path: Path to the manifest containing info of all past/current jobs
 	:param array_jobs: Split multiple commands into separate (parallel) jobs
 	:param interactive: Make job interactive
-	:param ask_confirm: Ask to confirm ready to pull/submit
+	:param skip_confirm: Ask to confirm ready to pull/submit
 	:return:
 	'''
 	
-	if auto_pull and ask_confirm:
+	if not skip_confirm:
 		input('Have you pushed all changes?')
 	
 	jobdir = fmt_jobdir(jobdir)
@@ -157,11 +163,11 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 	logname = 'log-$(Process).txt'
 	log_path = os.path.join(path, logname)
 	
-	sub.append(sub_fmt.format(exec=job_path,
-	                          err=stdout_path,
-	                          out=stdout_path,
-	                          log=log_path,
-	                          procs=num_replicas))
+	sub.append(SUBMISSION_FORMAT.format(exec=job_path,
+			                          err=stdout_path,
+			                          out=stdout_path,
+			                          log=log_path,
+			                          procs=num_replicas))
 	
 	sub_path = os.path.join(path, 'submit.sub')
 	with open(sub_path, 'w') as f:
@@ -169,10 +175,7 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 	
 	print(f'Job prepared: {name}')
 	
-	if auto_pull:
-		
-		for gd in git_dirs:
-			os.system(f'cd {gd};git pull')
+	git_update(git_repos)
 	
 	if bid is not None:
 		os.system('condor_submit_bid {bid} {job}{i}'.format(bid=bid,
@@ -185,4 +188,4 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		print(f'Job {name} submitted: {bid}')
 
 if __name__ == '__main__':
-	fig.entry('create_job')
+	fig.entry('submit')

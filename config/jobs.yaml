@@ -1,0 +1,29 @@
+
+
+script: /home/fleeb/scripts/run_n.sh
+
+template: /home/fleeb/scripts/template.sh
+
+dir: /home/fleeb/workspace/learn_rep
+
+gpu: 1
+mem: 48
+cpu: 4
+
+array: true
+
+git_repos:
+  - /home/fleeb/workspace/belt
+  - /home/fleeb/workspace/humpack
+  - /home/fleeb/workspace/omni-fig
+  - /home/fleeb/workspace/foundation
+  - /home/fleeb/workspace/mpi-cluster
+  - /home/fleeb/workspace/learn_rep
+
+gpu_names: V100-32
+
+bid: 50
+
+avoid: p004
+
+
