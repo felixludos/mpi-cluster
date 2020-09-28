@@ -26,7 +26,7 @@ def git_update(git_repos=None):
 def create_jobs(A):
 
 	root = A.push('root', os.environ['HOME'], overwrite=False)
-
+	
 	commands = A.pull('commands', '<>command', None)
 	if isinstance(commands, str):
 		commands = [commands]
@@ -46,6 +46,9 @@ def create_jobs(A):
 
 	if not len(commands):
 		raise Exception('no commands to submit')
+
+	update_cmds = A.pull('update-cmds', True)
+	include_cmds = A.pull('include-cmds', False)
 
 	template = A.push('template', None, silent=True)
 
@@ -180,23 +183,23 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 	if len(repos):
 		git_update(repos)
 	
-	update_cmds = A.pull('update-cmds', True)
-	include_cmds = A.pull('include-cmds', False)
-	
 	ID = None
 	if bid is None:
 		print('WARNING: job not submitted because no bid was included')
 	else:
 		
+		print('before')
 		f = io.StringIO()
 		with redirect_stdout(f):
 			os.system(f'condor_submit_bid {bid} {sub_path}')
 		s = f.getvalue()
+		print('after')
 		
-		print(s)
+		print('s', s)
 		key = 'submitted to cluster '
 		if key in s:
 			idx = s.find(key) + len(key)
+			print(idx)
 			if len(s) > idx:
 				ID = s[idx:-1]
 
