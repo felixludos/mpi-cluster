@@ -1,7 +1,7 @@
 
 import sys, os
 
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 import io
 
 from datetime import datetime
@@ -191,7 +191,8 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		print('before')
 		f = io.StringIO()
 		with redirect_stdout(f):
-			os.system(f'condor_submit_bid {bid} {sub_path}')
+			with redirect_stderr(f):
+				os.system(f'condor_submit_bid {bid} {sub_path}')
 		s = f.getvalue()
 		print('after')
 		
