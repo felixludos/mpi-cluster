@@ -216,7 +216,7 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 			idx = s.find(key) + len(key)
 			print(idx)
 			if len(s) > idx:
-				ID = s[idx:-1]
+				ID = s[idx:-2]
 
 		print('out', ID)
 
@@ -228,10 +228,10 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		'bid': bid,
 	}
 	if rawname is not None:
-		manifest[name] = rawname
+		manifest[name]['name'] = rawname
 	
 	if ID is not None:
-		manifest[name] = ID
+		manifest[name]['ID'] = ID
 	
 	if include_cmds:
 		manifest[name]['commands'] = commands
