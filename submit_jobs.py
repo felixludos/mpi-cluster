@@ -1,5 +1,6 @@
 
 import sys, os
+import time
 
 from contextlib import redirect_stdout, redirect_stderr
 import io
@@ -193,6 +194,7 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		with redirect_stdout(f):
 			with redirect_stderr(f):
 				os.system(f'condor_submit_bid {bid} {sub_path}')
+				time.sleep(1)
 		s = f.getvalue()
 		print('after')
 		
