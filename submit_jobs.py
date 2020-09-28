@@ -15,6 +15,11 @@ def git_update(git_repos=None):
 	return git_repos
 
 
+def is_todo(line):
+	line = line.strip()
+	return len(line) > 0 and line[0] != '#'
+
+
 # @fig.Script('prep-jobs', description='Prepare jobs for the cluster')
 @fig.Script('submit', description='Submit jobs to the cluster')
 def create_jobs(A):
@@ -24,7 +29,8 @@ def create_jobs(A):
 	commands = A.pull('commands', '<>command', None)
 	if isinstance(commands, str):
 		commands = [commands]
-
+	
+	cmd_path = None
 	if commands is None:
 		cmd_path = A.pull('command-path', '<>cmd-path', '<>path', None)
 
@@ -90,7 +96,14 @@ def create_jobs(A):
 
 	path = os.path.join(jobdir, name)
 	create_dir(path)
-
+	
+	for i, cmd in enumerate(commands):
+		jpath = os.path.join(path, 'job_{i}.sh')
+		
+		write_job(cmd, jpath, name=args.name + ' - process: {}'.format(i), cddir=args.dir,
+		          tmpl=job_template)
+	
+	
 	job_path = os.path.join(path, 'job-$(Process).sh')
 
 	sub = []
@@ -179,10 +192,9 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 			'path': path,
 
 		}
-
-		with open(manifest_path, 'a+') as f:
-			f.write(f'{name} - {num_replicas} - {bid}\n')
-
+		
+		save_yaml(manifest, manifest_path)
+		
 		if update_cmds and cmd_path is not None:
 			with open(cmd_path, 'r') as f:
 				raw = f.read().split('\n')

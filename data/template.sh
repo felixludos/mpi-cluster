@@ -7,13 +7,13 @@ export FOUNDATION_TESTING="0"
 
 export JOB_REGISTRY_PATH="/home/fleeb/jobs/registry.txt"
 
-export RESTART_AFTER="10"
+# <head>
 
-echo "-- starting job --"
+echo "-- starting job $(date) --"
 
 #nvidia-smi
 
-{}
+<job>
 
 CODE=$?
 
@@ -22,7 +22,7 @@ CODE=$?
 
 if [ $CODE -eq 3 ]
 then
-  echo "-- pausing for restart --"
+  echo "-- pausing for restart $(date) --"
   exit 3
 fi
 #
@@ -31,4 +31,4 @@ fi
 #
 #nvidia-smi
 
-echo "-- job complete --"
+echo "-- job complete $(date) --"

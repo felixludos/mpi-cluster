@@ -4,6 +4,21 @@ import sys, os
 import omnibelt as util
 
 
+def write_job(cmds, path, cddir=None, tmpl=None):
+	
+	if tmpl is None:
+		tmpl = '#!\n# <header>\n<job>'
+	
+	if cddir is not None:
+		tmpl.replace('# <header>', f'cd {cddir}')
+	
+	if isinstance(cmds, (list, tuple)):
+		cmds = '\n'.join(cmds)
+	
+	tmpl.replace('<job>', cmds)
+	
+	with open(path, 'w') as f:
+		f.write(tmpl)
 
 
 def fmt_jobdir(jobdir=None):
