@@ -1,11 +1,12 @@
 
 import sys, os
 
-from omnibelt import get_now, load_yaml, save_yaml, create_dir
+from datetime import datetime
+from omnibelt import load_yaml, save_yaml, create_dir
 
 import omnifig as fig
 
-from src import fmt_jobdir, GPU_NAMES, SUBMISSION_FORMAT
+from src import fmt_jobdir, GPU_NAMES, SUBMISSION_FORMAT, write_job, is_todo
 
 @fig.AutoScript('git-pull', description='Pull several git repos')
 def git_update(git_repos=None):
@@ -13,11 +14,6 @@ def git_update(git_repos=None):
 		for gd in git_repos:
 			os.system(f'cd {gd};git pull')
 	return git_repos
-
-
-def is_todo(line):
-	line = line.strip()
-	return len(line) > 0 and line[0] != '#'
 
 
 # @fig.Script('prep-jobs', description='Prepare jobs for the cluster')
@@ -48,25 +44,18 @@ def create_jobs(A):
 
 	template = A.push('template', None, silent=True)
 
-	template_path = A.pull('template-path', None)
-	if template_path is not None:
-		if not os.path.isfile(template_path):
-			template_path = os.path.join(root, template_path)
-
-		with open(template_path, 'r') as f:
-			template = f.read()
-
-	if template is not None:
-		headers = get_header_cmds(A)
-
-		if len(headers):
-			template = template.replace('# <header>', '\n'.join(headers))
-
 	if template is None:
-		template = '#!\n<job>\n'
+
+		template_path = A.pull('template-path', None)
+		if template_path is not None:
+			if not os.path.isfile(template_path):
+				template_path = os.path.join(root, template_path)
+	
+			with open(template_path, 'r') as f:
+				template = f.read()
+
 
 	print(f'Will submit {len(commands)} jobs.')
-
 
 	jobdir = fmt_jobdir(A.pull('jobdir', None))
 
@@ -75,16 +64,24 @@ def create_jobs(A):
 	manifest = load_yaml(manifest_path) if os.path.isfile(manifest_path) else {}
 	num = len(manifest)
 
-	name = A.pull('name', 'job')
+	rawname = A.pull('name', None)
+	name = rawname
+	if name is None:
+		name = 'job'
 
-	if A.pull('include-num', True):
+	if A.pull('include-num', True) or name in manifest:
 		name = f'{name}_{num}'
 
-	now = get_now()
-	if A.pull('include-date', False):
-		name = f'{name}_{now}'
+	now = datetime.now()
+	if A.pull('include-date', False) or name in manifest:
+		snow = now.strftime("%y%m%d-%H%M%S")
+		name = f'{name}_{snow}'
 
 	repos = A.pull('git-repos', '<>git_repos', [])
+
+	bid = A.pull('bid', None)
+	if bid is None:
+		print('WARNING: job will not be submitted because there is no bid') # useful for dry runs
 
 	confirm = A.pull('confirm', True)
 	if confirm:
@@ -97,17 +94,15 @@ def create_jobs(A):
 	path = os.path.join(jobdir, name)
 	create_dir(path)
 	
-	for i, cmd in enumerate(commands):
-		jpath = os.path.join(path, 'job_{i}.sh')
-		
-		write_job(cmd, jpath, name=args.name + ' - process: {}'.format(i), cddir=args.dir,
-		          tmpl=job_template)
+	working_dir = A.pull('working-dir', None)
 	
+	for i, cmd in enumerate(commands):
+		
+		write_job(cmd, os.path.join(path, f'job_{i}.sh'), cddir=working_dir, tmpl=template)
+	
+	sub = []
 	
 	job_path = os.path.join(path, 'job-$(Process).sh')
-
-	sub = []
-
 	sub.append(f'environment = JOBDIR={path};JOBEXEC={job_path};PROCESS_ID=$(Process);'
 	           f'JOB_ID=$(ID);JOB_NAME={name};JOB_NUM={num}')
 
@@ -178,41 +173,52 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 
 	if len(repos):
 		git_update(repos)
+	
+	update_cmds = A.pull('update-cmds', True)
+	include_cmds = A.pull('include-cmds', False)
 
-	bid = A.pull('bid', None)
-	if bid is not None:
+	if bid is None:
+		print('WARNING: job not submitted because no bid was included')
+	else:
 		out = os.system(f'condor_submit_bid {bid} {sub_path}')
 
 		print('out', out)
 
-		manifest[name] = {
-			'job-num': num,
-			'procs': len(commands),
-			'name': name,
-			'path': path,
+	manifest[name] = {
+		'job-num': num,
+		'procs': len(commands),
+		'path': path,
+		'date': now,
+		'bid': bid,
+	}
+	if rawname is not None:
+		manifest[name] = rawname
+	
+	if include_cmds:
+		manifest[name]['commands'] = commands
+	
+	save_yaml(manifest, manifest_path)
+	
+	if update_cmds and cmd_path is not None:
+		with open(cmd_path, 'r') as f:
+			raw = f.read().split('\n')
 
-		}
+		fixed = []
+		i = 0
+		for line in raw:
+			if is_todo(line):
+				fixed.append(f'# {line} # {name} {i}')
+				i += 1
+			else:
+				fixed.append(line)
+		fixed = '\n'.join(fixed)
+
+		with open(cmd_path, 'w') as f:
+			f.write(fixed)
+
+	print(f'Job {name} submitted: {bid}')
 		
-		save_yaml(manifest, manifest_path)
-		
-		if update_cmds and cmd_path is not None:
-			with open(cmd_path, 'r') as f:
-				raw = f.read().split('\n')
-
-			fixed = []
-			i = 0
-			for line in raw:
-				if is_todo(line):
-					fixed.append(f'# {line} # {name} {i}')
-					i += 1
-				else:
-					fixed.append(line)
-			fixed = '\n'.join(fixed)
-
-			with open(cmd_path, 'w') as f:
-				f.write(fixed)
-
-		print(f'Job {name} submitted: {bid}')
+	return name
 
 # @fig.Script('submit', description='Submit jobs to the cluster')
 # def submit_jobs(A):

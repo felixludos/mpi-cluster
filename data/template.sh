@@ -1,15 +1,16 @@
 
-export FOUNDATION_RUN_MODE="cluster"
+source /home/fleeb/.bashrc
 
 export FOUNDATION_SAVE_DIR="/home/fleeb/trained_nets/"
 export FOUNDATION_DATA_DIR="/home/fleeb/local_data/"
-export FOUNDATION_TESTING="0"
 
-export JOB_REGISTRY_PATH="/home/fleeb/jobs/registry.txt"
+export JOB_REGISTRY_PATH="/home/fleeb/jobdir/registry.txt"
 
 # <head>
 
-echo "-- starting job $(date) --"
+#echo "-- starting job $(date) --"
+
+echo "$JOB_NAME\t$JOB_ID\t$(date)\t$(hostname)" >> "/home/fleeb/jobdir/starts.txt"
 
 #nvidia-smi
 
@@ -17,12 +18,14 @@ echo "-- starting job $(date) --"
 
 CODE=$?
 
+echo "$JOB_NAME\t$JOB_ID\t$(date)\t$(hostname)\t$CODE" >> "/home/fleeb/jobdir/terminals.txt"
+
 #echo "CODE"
 #echo $CODE
 
 if [ $CODE -eq 3 ]
 then
-  echo "-- pausing for restart $(date) --"
+#  echo "-- pausing for restart $(date) --"
   exit 3
 fi
 #
@@ -31,4 +34,6 @@ fi
 #
 #nvidia-smi
 
-echo "-- job complete $(date) --"
+#echo "-- job complete $(date) --"
+
+exit 0

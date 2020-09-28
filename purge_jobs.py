@@ -16,8 +16,8 @@ def purge_jobs(jobdir=None, skip_confirm=False):
 	jobdir = fmt_jobdir(jobdir)
 	
 	if not skip_confirm:
-		response = input(f'really empty {jobdir}? y/[n] ')
-		if response != 'y':
+		response = input(f'really empty {jobdir} (y/[n]) ? ')
+		if response.lower() != 'y':
 			print('Did nothing.')
 			return 0
 	
@@ -32,6 +32,6 @@ def purge_jobs(jobdir=None, skip_confirm=False):
 	return 0
 
 if __name__ == '__main__':
-	fig.entry('purge_jobs')
+	fig.entry('purge-jobs')
 
 

@@ -1,8 +1,11 @@
 
 import sys, os
 import socket
+import yaml
 
-from omnibelt import save_yaml, load_yaml, get_now
+from datetime import datetime
+
+# from omnibelt import get_now
 
 import omnifig as fig
 
@@ -33,7 +36,7 @@ class OnCluster:
 
 		super().startup()
 
-		save_dir = self.save_dir
+		save_dir = os.path.basename(self.save_dir)
 
 		if save_dir is not None and 'JOBDIR' in os.environ:
 			jobdir = os.environ['JOBDIR']
@@ -45,23 +48,44 @@ class OnCluster:
 				# register job
 				if 'JOB_REGISTRY_PATH' in os.environ:
 					rpath = os.environ['JOB_REGISTRY_PATH']
-					reg = load_yaml(rpath) if os.path.isfile(rpath) else []
-					reg.append({
-						'timestamp': get_now(),
+					with open(rpath, 'a') as f:
+						name, ID = os.environ['JOB_NAME'], os.environ['JOB_ID']
+						f.write(f'{name}\t{ID}\t{save_dir}')
 
-						'id': os.environ['JOB_ID'].split('#')[-1],
-						'num': int(os.environ['JOB_NUM']),
-						'proc': int(os.environ['PROCESS_ID']),
-
-						'host': socket.gethostname(),
-
-						'run': save_dir,
-						'job': jobdir,
-					})
-					save_yaml(reg, rpath)
+				# register job
+				# if 'JOB_REGISTRY_PATH' in os.environ:
+				# 	rpath = os.environ['JOB_REGISTRY_PATH']
+				# 	with open(rpath, 'r+') as f:
+				#
+				# 		reg = yaml.safe_load(f)
+				#
+				# 		name = os.environ['JOB_NAME']
+				#
+				# 		spins = reg.get(name, [])
+				#
+				# 		spins.append({
+				# 			'timestamp': datetime.now(),
+				#
+				# 			'id': os.environ['JOB_ID'].split('#')[-1],
+				# 			'num': int(os.environ['JOB_NUM']),
+				# 			'proc': int(os.environ['PROCESS_ID']),
+				#
+				# 			'host': socket.gethostname(),
+				#
+				# 			'run': save_dir,
+				# 			'job': jobdir,
+				# 		})
+				#
+				# 		reg[name] = {
+				# 			'start'
+				# 		}
+				#
+				# 	reg = load_yaml(rpath) if os.path.isfile(rpath) else {}
+				# 	reg.append()
+				# 	save_yaml(reg, rpath)
 
 				with open(os.path.join(jobdir, cname), 'w') as f:
-					f.write(os.path.basename(save_dir))
+					f.write(save_dir)
 				print('[Saved checkpoint dir for restarts]')
 
 

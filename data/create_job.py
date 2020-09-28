@@ -18,7 +18,7 @@ def is_todo(line):
 	line = line.strip()
 	return len(line) > 0 and line[0] != '#'
 
-@fig.AutoScript('submit', description='Submit jobs to the cluster')
+# @fig.AutoScript('submit', description='Submit jobs to the cluster')
 def create_job(
 		name=None, cmd=None, cmd_path=None, bid=None,
        jobdir=None, template=None, rerun=None,

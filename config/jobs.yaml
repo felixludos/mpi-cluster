@@ -1,13 +1,15 @@
 
 parents: [repos]
 
-cmd_path: /home/fleeb/todo.sh
-update_cmds: true
-include_date: true
+command-path: /home/fleeb/todo.sh
+update-cmds: true
+include-cmds: true # in manifest
 
-template: /is/ei/fleeb/workspace/mpi-cluster/data/template.sh
+#include-date: true
 
-dir: /home/fleeb/workspace/learn_rep
+template-path: /is/ei/fleeb/workspace/mpi-cluster/data/template.sh
+
+working-dir: /home/fleeb/workspace/learn_rep
 
 gpu: 1
 ram: 48
@@ -15,7 +17,9 @@ cpu: 4
 
 array: true
 
-gpu_names: V100-32
+gpu-names: V100-32
+
+time-limit: 10
 
 bid: 50
 
