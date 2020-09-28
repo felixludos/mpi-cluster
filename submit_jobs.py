@@ -1,6 +1,9 @@
 
 import sys, os
 
+from contextlib import redirect_stdout
+import io
+
 from datetime import datetime
 from omnibelt import load_yaml, save_yaml, create_dir
 
@@ -101,7 +104,6 @@ def create_jobs(A):
 	working_dir = A.pull('working-dir', None)
 	
 	for i, cmd in enumerate(commands):
-		
 		write_job(cmd, os.path.join(path, f'job-{i}.sh'), cddir=working_dir, tmpl=template)
 	
 	sub = []
@@ -180,13 +182,25 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 	
 	update_cmds = A.pull('update-cmds', True)
 	include_cmds = A.pull('include-cmds', False)
-
+	
+	ID = None
 	if bid is None:
 		print('WARNING: job not submitted because no bid was included')
 	else:
-		out = os.system(f'condor_submit_bid {bid} {sub_path}')
+		
+		f = io.StringIO()
+		with redirect_stdout(f):
+			os.system(f'condor_submit_bid {bid} {sub_path}')
+		s = f.getvalue()
+		
+		print(s)
+		key = 'submitted to cluster '
+		if key in s:
+			idx = s.find(key) + len(key)
+			if len(s) > idx:
+				ID = s[idx:-1]
 
-		print('out', out)
+		print('out', ID)
 
 	manifest[name] = {
 		'job-num': num,
@@ -197,6 +211,9 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 	}
 	if rawname is not None:
 		manifest[name] = rawname
+	
+	if ID is not None:
+		manifest[name] = ID
 	
 	if include_cmds:
 		manifest[name]['commands'] = commands
