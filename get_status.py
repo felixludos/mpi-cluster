@@ -17,7 +17,7 @@ def get_status(A):
 	
 	user = A.pull('user', 'fleeb', silent=silent)
 	
-	cols = A.pull('columns', ['status', 'ID', 'jnum', 'jexe', 'host'], silent=silent)
+	cols = A.pull('columns', ['status', 'jnum', 'ID', 'host'], silent=silent)
 	
 	data = collect_q_cmd(user, silent=silent)
 	

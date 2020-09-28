@@ -4,6 +4,8 @@ import sys, os
 import omnibelt as util
 
 
+
+
 def fmt_jobdir(jobdir=None):
 	_def = ''
 	if jobdir is None:

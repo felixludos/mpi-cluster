@@ -1,14 +1,16 @@
 
-parents: [code]
+parents: [repos]
 
-cmd_path: /home/fleeb/workspace/mpi-cluster/run_n.sh
+cmd_path: /home/fleeb/todo.sh
+update_cmds: true
+include_date: true
 
-template: /home/fleeb/workspace/mpi-cluster/template.sh
+template: /is/ei/fleeb/workspace/mpi-cluster/data/template.sh
 
 dir: /home/fleeb/workspace/learn_rep
 
 gpu: 1
-mem: 48
+ram: 48
 cpu: 4
 
 array: true

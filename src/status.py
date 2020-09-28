@@ -11,10 +11,16 @@ from .cluster import STATUS_CODES, COLATTRS
 
 def parse_jobexec(raw, info=None):
 	*root, jdir, jexe = raw.split('/')
-	
-	num, date = jdir.split('_')
-	num = int(num[3:])
-	
+
+	if '_' in jdir:
+
+		num, date = jdir.split('_')
+		num = int(num[3:])
+
+	else:
+		num = int(jdir[3:])
+		date = None
+
 	if info is None:
 		info = hp.adict()
 	

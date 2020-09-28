@@ -1,31 +1,25 @@
 
 import sys, os
 
+from omnibelt import get_now, load_yaml, save_yaml, create_dir
+
 import omnifig as fig
 
-def get_header_cmds(A):
+from src import fmt_jobdir, GPU_NAMES, SUBMISSION_FORMAT
 
-	cmds = []
+@fig.AutoScript('git-pull', description='Pull several git repos')
+def git_update(git_repos=None):
+	if git_repos is not None and isinstance(git_repos, (list, tuple)):
+		for gd in git_repos:
+			os.system(f'cd {gd};git pull')
+	return git_repos
 
-	headers = A.pull('headers', [])
-	cmds.extend(headers)
 
-	git_repos = A.pull('git-repos', [])
+# @fig.Script('prep-jobs', description='Prepare jobs for the cluster')
+@fig.Script('submit', description='Submit jobs to the cluster')
+def create_jobs(A):
 
-	for repo in git_repos:
-		cmds.append(f'cd {repo}')
-		cmds.append('git pull')
-
-	working_dir = A.pull('working-dir', None)
-	cmds.append(f'cd {working_dir}')
-
-	return cmds
-
-# @fig.Script('submit', description='Submit jobs to the cluster')
-def submit_jobs(A):
-
-	proj = fig.get_project('manager')
-	root = A.push('root', proj.root, overwrite=False)
+	root = A.push('root', os.environ['HOME'], overwrite=False)
 
 	commands = A.pull('commands', '<>command', None)
 	if isinstance(commands, str):
@@ -35,18 +29,18 @@ def submit_jobs(A):
 		cmd_path = A.pull('command-path', '<>cmd-path', '<>path', None)
 
 		if cmd_path is not None:
+			if not os.path.isfile(cmd_path):
+				cmd_path = os.path.join(root, cmd_path)
 			commands = []
 			with open(cmd_path, 'r') as f:
 				for line in f.read().split('\n'):
 					if len(line) and line[0] != '#':
 						commands.append(line)
 
-	
-
 	if not len(commands):
 		raise Exception('no commands to submit')
 
-	template = A.push('template', None)
+	template = A.push('template', None, silent=True)
 
 	template_path = A.pull('template-path', None)
 	if template_path is not None:
@@ -67,14 +61,153 @@ def submit_jobs(A):
 
 	print(f'Will submit {len(commands)} jobs.')
 
+
+	jobdir = fmt_jobdir(A.pull('jobdir', None))
+
+	manifest_path = os.path.join(jobdir, 'manifest.yaml')
+
+	manifest = load_yaml(manifest_path) if os.path.isfile(manifest_path) else {}
+	num = len(manifest)
+
+	name = A.pull('name', 'job')
+
+	if A.pull('include-num', True):
+		name = f'{name}_{num}'
+
+	now = get_now()
+	if A.pull('include-date', False):
+		name = f'{name}_{now}'
+
+	repos = A.pull('git-repos', '<>git_repos', [])
+
 	confirm = A.pull('confirm', True)
 	if confirm:
-		resp = input(f'Submit {len(commands)} to aws? [y]/n ')
+		resp = input(f'Submit {len(commands)} jobs ([y]/n)? ')
 		if resp.lower() in {'n', 'no'}:
 			print('Nothing was submitted.')
 			return
 	A.push('confirm', False, silent=True)
 
+	path = os.path.join(jobdir, name)
+	create_dir(path)
+
+	job_path = os.path.join(path, 'job-$(Process).sh')
+
+	sub = []
+
+	sub.append(f'environment = JOBDIR={path};JOBEXEC={job_path};PROCESS_ID=$(Process);'
+	           f'JOB_ID=$(ID);JOB_NAME={name};JOB_NUM={num}')
+
+	reqs = []
+
+	ram = A.pull('ram', '<>mem', 1) # in gb
+	cpu = A.pull('cpu', 1)
+	sub.append(f'request_memory = {ram * 1024}')
+	sub.append(f'request_cpus = {cpu}')
+
+	gpu = A.pull('gpu', 0)
+	if gpu > 0:
+		sub.append(f'request_gpus = {gpu}')
+		gpu_names = A.pull('gpu-names', '<>gpu-name', '<>gpu_names', None)
+		if gpu_names is not None:
+			if isinstance(gpu_names, str):
+				gpu_names = gpu_names,
+
+			gnames = []
+			for gname in gpu_names:
+				if gname in GPU_NAMES:
+					gnames.append(GPU_NAMES[gname])
+				else:
+					print(f'WARNING: Failed to recognize gpu name: {gname} (see source file for list)')
+
+			if len(gnames):
+				reqs.append(' || '.join(f'CUDADeviceName == \"{gname}\"' for gname in gnames))
+				print('Requiring GPUs: {}'.format(' or '.join(gnames)))
+
+	avoid = A.pull('avoid', None)
+	if avoid is not None and len(avoid):
+		reqs.extend(f'Target.Machine != "{node}.internal.cluster.is.localnet"' for node in avoid)
+		print(f'Avoiding: {avoid}')
+
+	if len(reqs):
+		sub.append('requirements = {}'.format(' && '.join(f'({r})' for r in reqs)))
+
+	time_limit = A.pull('time-limit', None) # in hours
+	if time_limit is not None:
+		slimit = int(float(time_limit) * 3600)
+		sub.append(f'''MaxTime = {slimit}
+periodic_hold = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))
+periodic_hold_reason = "Job runtime exceeded"
+periodic_hold_subcode = 1''')
+		print(f'Will restart automatically after {time_limit} hrs')
+
+	sub.append('''on_exit_hold = (ExitCode =?= 3)
+on_exit_hold_reason = "Checkpointed, will resume"
+on_exit_hold_subcode = 2
+periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReasonSubCode =?= 1) || (HoldReasonSubCode =?= 2)) )''')
+
+	stdoutname = 'stdout-$(Process).txt'
+	stdout_path = os.path.join(path, stdoutname)
+	logname = 'log-$(Process).txt'
+	log_path = os.path.join(path, logname)
+
+	sub.append(SUBMISSION_FORMAT.format(exec=job_path,
+	                                    err=stdout_path,
+	                                    out=stdout_path,
+	                                    log=log_path,
+	                                    procs=len(commands)))
+
+	sub_path = os.path.join(path, 'submit.sub')
+	with open(sub_path, 'w') as f:
+		f.write('\n'.join(sub))
+
+	print(f'Job prepared: {name}')
+
+	if len(repos):
+		git_update(repos)
+
+	bid = A.pull('bid', None)
+	if bid is not None:
+		out = os.system(f'condor_submit_bid {bid} {sub_path}')
+
+		print('out', out)
+
+		manifest[name] = {
+			'job-num': num,
+			'procs': len(commands),
+			'name': name,
+			'path': path,
+
+		}
+
+		with open(manifest_path, 'a+') as f:
+			f.write(f'{name} - {num_replicas} - {bid}\n')
+
+		if update_cmds and cmd_path is not None:
+			with open(cmd_path, 'r') as f:
+				raw = f.read().split('\n')
+
+			fixed = []
+			i = 0
+			for line in raw:
+				if is_todo(line):
+					fixed.append(f'# {line} # {name} {i}')
+					i += 1
+				else:
+					fixed.append(line)
+			fixed = '\n'.join(fixed)
+
+			with open(cmd_path, 'w') as f:
+				f.write(fixed)
+
+		print(f'Job {name} submitted: {bid}')
+
+# @fig.Script('submit', description='Submit jobs to the cluster')
+# def submit_jobs(A):
+#
+# 	name =
+#
+# 	pass
 
 
 if __name__ == '__main__':

@@ -14,16 +14,22 @@ def git_update(git_repos=None):
 			os.system(f'cd {gd};git pull')
 	return git_repos
 
+def is_todo(line):
+	line = line.strip()
+	return len(line) > 0 and line[0] != '#'
+
 @fig.AutoScript('submit', description='Submit jobs to the cluster')
 def create_job(
 		name=None, cmd=None, cmd_path=None, bid=None,
        jobdir=None, template=None, rerun=None,
-       time_limit=None, avoid=None,
+       time_limit=None, avoid=None, update_cmds=False,
+		include_date=False, include_num=True,
        cpu=1, gpu=0, ram=1, gpu_names=None,
        git_repos=None, manifest_path=None, array_jobs=True,
        interactive=False, skip_confirm=False
                ):
 	'''
+	Submits jobs using the condor submission queue
 
 	:param name: Name of job (will be set automatically if not provided)
 	:param cmd: command to be submitted
@@ -34,6 +40,7 @@ def create_job(
 	:param bid: Bid for the job (1 - 2000) (if provided, job will automatically be submitted)
 	:param time_limit: Time in hours before forcing the job to restart
 	:param avoid: Nodes that should be avoided
+	:param update_cmds: Comment out commands in the command file after they have been submitted
 	:param cpu: Number of CPUs
 	:param gpu: Number of GPUs
 	:param ram: GB of RAM
@@ -64,7 +71,9 @@ def create_job(
 	
 	if name is None:
 		name = f'job{str(num).zfill(4)}'
-	# now = util.get_now()
+	now = util.get_now()
+	if include_date:
+		name = f'{name}_{now}'
 	
 	path = os.path.join(jobdir, name)
 	util.create_dir(path)
@@ -89,7 +98,7 @@ def create_job(
 		cmds = []
 		if cmd_path is not None:
 			with open(cmd_path, 'r') as f:
-				cmds.extend([l for l in f.read().split('\n') if len(l) > 1 and l[0] != '#'])
+				cmds.extend([l for l in f.read().split('\n') if is_todo(l)])
 		if cmd is not None:
 			cmds.append(cmd)
 		assert len(cmds), 'No commands to submit'
@@ -184,6 +193,23 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		
 		with open(manifest_path, 'a+') as f:
 			f.write(f'{name} - {num_replicas} - {bid}\n')
+
+		if update_cmds and cmd_path is not None:
+			with open(cmd_path, 'r') as f:
+				raw = f.read().split('\n')
+
+			fixed = []
+			i = 0
+			for line in raw:
+				if is_todo(line):
+					fixed.append(f'# {line} # {name} {i}')
+					i += 1
+				else:
+					fixed.append(line)
+			fixed = '\n'.join(fixed)
+
+			with open(cmd_path, 'w') as f:
+				f.write(fixed)
 		
 		print(f'Job {name} submitted: {bid}')
 

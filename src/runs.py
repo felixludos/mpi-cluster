@@ -1,11 +1,33 @@
 
+import sys, os
+import socket
+
+from omnibelt import save_yaml, load_yaml, get_now
+
 import omnifig as fig
 
 
-
-
 @fig.AutoModifier('cls-run')
-class OnCluster(Run):
+class OnCluster:
+
+	def __init__(self, A, silent=False):
+
+		if 'JOBDIR' in os.environ: # on cluster
+
+			jobdir = os.environ['JOBDIR']
+			pid = os.environ['PROCESS_ID']
+			cname = f'checkpoints{pid}.txt'
+
+			if cname in os.listdir(jobdir):
+				with open(os.path.join(jobdir, cname),'r') as f:
+					name = f.read()
+
+				print(f'[Found checkpoint from restart: {name}, resuming now]')
+
+				A.push('resume', name)
+
+		super().__init__(A, silent=silent)
+
 
 	def startup(self):
 
@@ -15,7 +37,8 @@ class OnCluster(Run):
 
 		if save_dir is not None and 'JOBDIR' in os.environ:
 			jobdir = os.environ['JOBDIR']
-			cname = 'checkpoints{}.txt'.format(os.environ['PROCESS_ID'])
+			pid = os.environ['PROCESS_ID']
+			cname = f'checkpoints{pid}.txt'
 
 			if cname not in os.listdir(jobdir):
 
