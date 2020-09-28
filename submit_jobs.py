@@ -4,6 +4,8 @@ import sys, os
 from datetime import datetime
 from omnibelt import load_yaml, save_yaml, create_dir
 
+from tabulate import tabulate
+
 import omnifig as fig
 
 from src import fmt_jobdir, GPU_NAMES, SUBMISSION_FORMAT, write_job, is_todo
@@ -70,7 +72,7 @@ def create_jobs(A):
 		name = 'job'
 
 	if A.pull('include-num', True) or name in manifest:
-		name = f'{name}_{num}'
+		name = f'{name}_{str(num).zfill(3)}'
 
 	now = datetime.now()
 	if A.pull('include-date', False) or name in manifest:
@@ -79,6 +81,8 @@ def create_jobs(A):
 
 	repos = A.pull('git-repos', '<>git_repos', [])
 
+	print(tabulate(enumerate(commands), headers=['i', 'command']))
+	
 	bid = A.pull('bid', None)
 	if bid is None:
 		print('WARNING: job will not be submitted because there is no bid') # useful for dry runs
@@ -98,7 +102,7 @@ def create_jobs(A):
 	
 	for i, cmd in enumerate(commands):
 		
-		write_job(cmd, os.path.join(path, f'job_{i}.sh'), cddir=working_dir, tmpl=template)
+		write_job(cmd, os.path.join(path, f'job-{i}.sh'), cddir=working_dir, tmpl=template)
 	
 	sub = []
 	
