@@ -1,4 +1,6 @@
 
 name: manager
 
+related: [foundation]
+
 src: startup.py
