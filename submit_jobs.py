@@ -5,6 +5,9 @@ import time
 from contextlib import redirect_stdout, redirect_stderr
 import io
 
+import subprocess
+
+
 from datetime import datetime
 from omnibelt import load_yaml, save_yaml, create_dir
 
@@ -189,15 +192,24 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		print('WARNING: job not submitted because no bid was included')
 	else:
 		
-		print('before')
-		f = io.StringIO()
-		with redirect_stdout(f):
-			with redirect_stderr(f):
-				os.system(f'condor_submit_bid {bid} {sub_path}')
-				time.sleep(1)
-		s = f.getvalue()
-		print('after')
 		
+		process = subprocess.Popen(['condor_submit_bid', f'{bid}', f'{sub_path}'],
+		                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		out, err = process.communicate()
+		print(out)
+		print(err)
+		
+		s = out.decode()
+		
+		# print('before')
+		# f = io.StringIO()
+		# with redirect_stdout(f):
+		# 	with redirect_stderr(f):
+		# 		os.system(f'condor_submit_bid {bid} {sub_path}')
+		# 		time.sleep(1)
+		# s = f.getvalue()
+		# print('after')
+
 		print('s', s)
 		key = 'submitted to cluster '
 		if key in s:
