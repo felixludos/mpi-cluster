@@ -4,13 +4,13 @@ source /home/fleeb/.bashrc
 export FOUNDATION_SAVE_DIR="/home/fleeb/trained_nets/"
 export FOUNDATION_DATA_DIR="/home/fleeb/local_data/"
 
-export JOB_REGISTRY_PATH="/home/fleeb/jobdir/registry.txt"
+export JOB_REGISTRY_PATH="/home/fleeb/jobdir/registry.tsv"
 
 # <head>
 
 #echo "-- starting job $(date) --"
 
-echo "$JOB_NAME\t$JOB_ID\t$(date)\t$(hostname)" >> "/home/fleeb/jobdir/starts.txt"
+echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)" >> "/home/fleeb/jobdir/starts.tsv"
 
 #nvidia-smi
 
@@ -18,7 +18,7 @@ echo "$JOB_NAME\t$JOB_ID\t$(date)\t$(hostname)" >> "/home/fleeb/jobdir/starts.tx
 
 CODE=$?
 
-echo "$JOB_NAME\t$JOB_ID\t$(date)\t$(hostname)\t$CODE" >> "/home/fleeb/jobdir/terminals.txt"
+echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)\t$CODE" >> "/home/fleeb/jobdir/terminals.tsv"
 
 #echo "CODE"
 #echo $CODE
