@@ -1,18 +1,20 @@
 
-source /home/fleeb/.bashrc
+#source /home/fleeb/.bashrc
 
 export FOUNDATION_SAVE_DIR="/home/fleeb/trained_nets/"
 export FOUNDATION_DATA_DIR="/home/fleeb/local_data/"
 
 export JOB_REGISTRY_PATH="/home/fleeb/jobdir/registry.tsv"
 
-# <head>
+# <header>
 
 #echo "-- starting job $(date) --"
 
 echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)" >> "/home/fleeb/jobdir/starts.tsv"
 
+#pwd
 #nvidia-smi
+#ls
 
 <job>
 
