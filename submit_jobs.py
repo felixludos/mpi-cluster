@@ -90,14 +90,16 @@ def create_jobs(A):
 		name = f'{name}_{snow}'
 
 	repos = A.pull('git-repos', '<>git_repos', [])
-
-	print(tabulate(enumerate(commands), headers=['i', 'command']))
 	
+
 	bid = A.pull('bid', None)
 	if bid is None:
 		print('WARNING: job will not be submitted because there is no bid') # useful for dry runs
 
-	confirm = A.pull('confirm', True)
+
+	print(tabulate(enumerate(commands), headers=['i', 'command']))
+	
+	confirm = A.pull('confirm', True, silent=True)
 	if confirm:
 		resp = input(f'Submit {len(commands)} jobs ([y]/n)? ')
 		if resp.lower() in {'n', 'no'}:
@@ -196,8 +198,8 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		process = subprocess.Popen(['condor_submit_bid', f'{bid}', f'{sub_path}'],
 		                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		out, err = process.communicate()
-		print(out)
-		print(err)
+		# print(out)
+		# print(err)
 		
 		s = out.decode()
 		
@@ -210,15 +212,15 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		# s = f.getvalue()
 		# print('after')
 
-		print('s', s)
+		# print('s', s)
 		key = 'submitted to cluster '
 		if key in s:
 			idx = s.find(key) + len(key)
-			print(idx)
+			# print(idx)
 			if len(s) > idx:
 				ID = s[idx:-2]
 
-		print('out', ID)
+		# print('out', ID)
 
 	manifest[name] = {
 		'job-num': num,
@@ -246,7 +248,8 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		i = 0
 		for line in raw:
 			if is_todo(line):
-				fixed.append(f'# {line} # {name} {i}')
+				myid = i if ID is None else f'{ID}.{i}'
+				fixed.append(f'# {line} # {name} {myid}')
 				i += 1
 			else:
 				fixed.append(line)
