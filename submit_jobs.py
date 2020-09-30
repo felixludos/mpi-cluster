@@ -133,7 +133,7 @@ def create_jobs(A):
 		sub.append(f'request_gpus = {gpu}')
 		gpu_names = A.pull('gpu-names', '<>gpu-name', '<>gpu_names', None)
 		if gpu_names is not None:
-			if isinstance(gpu_names, str):
+			if not isinstance(gpu_names, (tuple, list)):
 				gpu_names = gpu_names,
 				
 			gpu_names = list(map(str, gpu_names))
