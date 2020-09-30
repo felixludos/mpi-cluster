@@ -50,7 +50,7 @@ class OnCluster:
 					rpath = os.environ['JOB_REGISTRY_PATH']
 					with open(rpath, 'a') as f:
 						name, ID = os.environ['JOB_NAME'], os.environ['JOB_ID']
-						f.write(f'{name}\t{ID}\t{save_dir}')
+						f.write(f'{name}\t{ID}\t{save_dir}\n')
 
 				# register job
 				# if 'JOB_REGISTRY_PATH' in os.environ:

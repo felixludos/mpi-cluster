@@ -135,6 +135,8 @@ def create_jobs(A):
 		if gpu_names is not None:
 			if isinstance(gpu_names, str):
 				gpu_names = gpu_names,
+				
+			gpu_names = list(map(str, gpu_names))
 
 			gnames = []
 			for gname in gpu_names:

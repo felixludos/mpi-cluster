@@ -9,29 +9,11 @@ import humpack as hp
 
 from .cluster import STATUS_CODES, COLATTRS
 
-def parse_jobexec(raw, info=None):
+def parse_jobexec(raw, info): # processes the job name/path -> remove
 	*root, jdir, jexe = raw.split('/')
 
-	if '_' in jdir:
+	info['name'] = jdir
 
-		num, date = jdir.split('_')
-		num = int(num[3:])
-
-	else:
-		num = int(jdir[3:])
-		date = None
-
-	if info is None:
-		info = hp.adict()
-	
-	info.jnum = num
-	# info.raw_date = date
-	info.date = belt.get_now()
-	# info.str_date = info.date.ctime()#.strftime()
-	
-	info.jexe = jexe
-	info.path = os.path.dirname(raw)
-	
 	return info
 
 
@@ -42,25 +24,28 @@ def parse_remotehost(raw):
 
 
 def parse_job_status(raw):
-	info = hp.adict()
+	info = {}
 	
 	if 'ClusterId' in raw:
-		info.ID = int(raw.ClusterId)
+		info['cID'] = raw['ClusterId']
 	
 	if 'ProcId' in raw:
-		info.proc = int(raw.ProcId)
+		info['proc'] = raw['ProcId']
+	
+	if 'proc' in info and 'cID' in info:
+		info['ID'] = '{}.{}'.format(info['cID'], info['proc'])
 	
 	if 'JobStatus' in raw:
-		info.status = STATUS_CODES[raw.JobStatus]
+		info['status'] = STATUS_CODES.get(raw['JobStatus'], raw['JobStatus'])
 	
 	if 'Args' in raw:
-		parse_jobexec(raw.Args, info)
+		parse_jobexec(raw['Args'], info)
 	
 	if 'RemoteHost' in raw:
 		try:
-			info.host = parse_remotehost(raw.RemoteHost)
+			info['host'] = parse_remotehost(raw['RemoteHost'])
 		except Exception:
-			info.host = raw.RemoteHost
+			info['host'] = raw['RemoteHost']
 	
 	return info
 
@@ -90,7 +75,7 @@ def collect_q_cmd(user, silent=False):
 	
 	# print(lines)
 	
-	active = hp.Table(parse_job_status(hp.adict(zip(COLATTRS, line.split('\t')))) for line in lines if len(line))
+	active = [parse_job_status(dict(zip(COLATTRS, line.split('\t')))) for line in lines if len(line)]
 	
 	return active
 
