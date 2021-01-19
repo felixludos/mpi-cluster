@@ -7,7 +7,7 @@ include-cmds: true # in manifest
 
 #include-date: true
 
-template-path: /is/ei/fleeb/workspace/mpi-cluster/data/template.sh
+template-path: /home/fleeb/workspace/mpi-cluster/data/template.sh
 
 working-dir: /home/fleeb/workspace/learn_rep
 
