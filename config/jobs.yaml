@@ -1,7 +1,7 @@
 
 parents: [repos]
 
-command-path: /home/fleeb/todo.sh
+command-path: /is/ei/fleeb/workspace/chome/todo.sh
 update-cmds: true
 include-cmds: true # in manifest
 
