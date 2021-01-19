@@ -9,7 +9,7 @@ import subprocess
 
 
 from datetime import datetime
-from omnibelt import load_yaml, save_yaml, create_dir
+from omnibelt import load_json, save_json, create_dir
 
 from tabulate import tabulate
 
@@ -71,9 +71,9 @@ def create_jobs(A):
 
 	jobdir = fmt_jobdir(A.pull('jobdir', None))
 
-	manifest_path = os.path.join(jobdir, 'manifest.yaml')
+	manifest_path = os.path.join(jobdir, 'manifest.json')
 
-	manifest = load_yaml(manifest_path) if os.path.isfile(manifest_path) else {}
+	manifest = load_json(manifest_path) if os.path.isfile(manifest_path) else {}
 	num = len(manifest)
 
 	rawname = A.pull('name', None)
@@ -240,7 +240,7 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 	if include_cmds:
 		manifest[name]['commands'] = commands
 	
-	save_yaml(manifest, manifest_path)
+	save_json(manifest, manifest_path)
 	
 	if update_cmds and cmd_path is not None:
 		with open(cmd_path, 'r') as f:
