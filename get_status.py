@@ -6,7 +6,7 @@ from datetime import datetime
 from tabulate import tabulate
 from collections import OrderedDict
 
-from omnibelt import load_json, load_tsv, recover_date, save_json
+from omnibelt import load_json, load_tsv, recover_date, save_json, load_yaml, save_yaml
 
 import omnifig as fig
 
@@ -169,10 +169,10 @@ def get_status(A):
 			
 			jobdir = fmt_jobdir(A.pull('jobdir', None))
 			
-			manifest_path = A.pull('manifest-path', os.path.join(jobdir, 'manifest.json'))
+			manifest_path = A.pull('manifest-path', os.path.join(jobdir, 'manifest.yaml'))
 			if not os.path.isfile(manifest_path):
-				save_json(None, manifest_path)
-			manifest = load_json(manifest_path)
+				save_yaml(None, manifest_path)
+			manifest = load_yaml(manifest_path)
 			if manifest is None:
 				manifest = []
 			
