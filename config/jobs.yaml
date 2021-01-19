@@ -1,15 +1,15 @@
 
 parents: [repos]
 
-command-path: /is/ei/fleeb/workspace/chome/todo.sh
+command-path: /home/fleeb/todo.sh
 update-cmds: true
 include-cmds: true # in manifest
 
 #include-date: true
 
-template-path: /is/ei/fleeb/workspace/code/mpi-cluster/data/template.sh
+template-path: /home/fleeb/workspace/code/mpi-cluster/data/template.sh
 
-working-dir: /home/fleeb/workspace/learn_rep
+working-dir: /home/fleeb/workspace/code/learn_rep
 
 gpu: 1
 ram: 48
