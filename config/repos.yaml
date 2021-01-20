@@ -2,10 +2,10 @@
 
 
 git_repos:
-  - /home/fleeb/workspace/belt
-  - /home/fleeb/workspace/humpack
-  - /home/fleeb/workspace/omni-fig
-  - /home/fleeb/workspace/foundation
-  - /home/fleeb/workspace/learn_rep
-  - /home/fleeb/workspace/adversary
+  - /home/fleeb/workspace/code/belt
+  - /home/fleeb/workspace/code/humpack
+  - /home/fleeb/workspace/code/omni-fig
+  - /home/fleeb/workspace/code/foundation
+  - /home/fleeb/workspace/code/learn_rep
+  - /home/fleeb/workspace/code/adversary
 
