@@ -224,6 +224,9 @@ def get_status(A):
 				
 				compute_durations(info, now=now)
 				
+				if 'ID' in info:
+					info['ID'] = str(info['ID'])
+				
 				jobs[ID] = info
 		
 		if job is None:
