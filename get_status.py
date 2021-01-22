@@ -118,9 +118,9 @@ def compute_durations(info, sig1='start', sig2='end', now=None):
 	if now is not None and key == 'wall' and last is not None:
 		wall = now - last if wall is None else wall + (now - last)
 	
-	if wait is None:
+	if wait is not None:
 		info['wait'] = wait.total_seconds() / 3600
-	if wall is None:
+	if wall is not None:
 		info['duration'] = wall.total_seconds() / 3600
 
 def sort_jobkeys(A, jobs):
