@@ -169,9 +169,6 @@ def get_status(A):
 				else:
 					failed.append(job)
 		
-		print('active')
-		print(jobs)
-		
 		if not active_only or len(jobs):
 			
 			jobdir = fmt_jobdir(A.pull('jobdir', None))
@@ -200,9 +197,6 @@ def get_status(A):
 					bid = entry.get('bid', None)
 					if bid is not None:
 						job['bid'] = bid
-			
-			print('after manifest')
-			print(jobs)
 			
 			starts = process_tsv('starts', jobdir, A, cols=['name', 'ID', 'date', 'host'],
 			                     include_event='start')
@@ -249,10 +243,6 @@ def get_status(A):
 				else:
 					jobs[ID] = info
 			
-			print(full)
-			print()
-			print(jobs)
-
 			# set_trace()
 			
 			# else:
@@ -302,6 +292,14 @@ def get_status(A):
 			for f in failed:
 				print(f)
 			print()
+	
+		pkl_name = A.pull('pickle-status', None)
+		if pkl_name is not None:
+			if '.p' not in pkl_name:
+				pkl_name = f'{pkl_name}.p'
+			with open(pkl_name, 'w') as f:
+				pickle.dump({'jobs':jobs, 'failed':failed}, f)
+			print(f'Pickled status to: {pkl_name}')
 	
 	return jobs
 
