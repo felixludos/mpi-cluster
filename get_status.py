@@ -176,7 +176,7 @@ def get_status(A):
 			if manifest is None:
 				manifest = []
 			
-			for entry in manifest:
+			for name, entry in manifest.items():
 				jnum = entry['ID']
 				for i, cmd in enumerate(entry.get('commands', [None]*entry['procs'])):
 					ID = f'{jnum}.{i}'
