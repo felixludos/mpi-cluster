@@ -10,7 +10,7 @@ from omnibelt import load_json, load_tsv, recover_date, save_json, load_yaml, sa
 
 import omnifig as fig
 
-from IPython.core.debugger import set_trace
+# from IPython.core.debugger import set_trace
 
 from cluster_src import fmt_jobdir, collect_q_cmd
 # from cluster_src.cluster import COLATTRS
@@ -153,7 +153,7 @@ def get_status(A):
 		
 		cols = A.pull('columns', ['status', 'name', 'ID', 'host', 'start', 'duration', 'wait', 'end', 'run'])
 		
-		active_only = A.pull('only-active', True)
+		active_only = A.pull('only-active', False)
 		
 		active = None if A.pull('no-active', not active_only) else collect_q_cmd(user, silent=True)
 		
@@ -230,7 +230,6 @@ def get_status(A):
 					full[ID]['events'].extend(entries)
 					full[ID]['events'] = sorted(full[ID]['events'], key=lambda x: x['date'])
 			
-			set_trace()
 			
 			for ID, info in full.items():
 				if ID not in jobs:
@@ -240,6 +239,9 @@ def get_status(A):
 				compute_durations(info, now=now)
 				
 				jobs[ID] = info
+			
+
+			# set_trace()
 			
 			# else:
 			# 	pkl_name = A.pull('pickle-status', None)
