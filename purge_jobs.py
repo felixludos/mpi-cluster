@@ -8,7 +8,7 @@ import omnibelt as util
 
 import omnifig as fig
 
-from src import fmt_jobdir
+from cluster_src import fmt_jobdir
 
 @fig.AutoScript('purge-jobs', description='Clears the jobs directory')
 def purge_jobs(jobdir=None, skip_confirm=False):

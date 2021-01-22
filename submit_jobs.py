@@ -15,7 +15,7 @@ from tabulate import tabulate
 
 import omnifig as fig
 
-from src import fmt_jobdir, GPU_NAMES, SUBMISSION_FORMAT, write_job, is_todo
+from cluster_src import fmt_jobdir, GPU_NAMES, SUBMISSION_FORMAT, write_job, is_todo
 
 @fig.AutoScript('git-pull', description='Pull several git repos')
 def git_update(git_repos=None):

@@ -10,8 +10,8 @@ from omnibelt import load_json, load_tsv, recover_date, save_json, load_yaml, sa
 
 import omnifig as fig
 
-from src import fmt_jobdir, collect_q_cmd
-from src.cluster import COLATTRS
+from cluster_src import fmt_jobdir, collect_q_cmd
+# from cluster_src.cluster import COLATTRS
 
 def process_tsv(name, root, A, cols=None, include_event=None):
 
