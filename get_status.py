@@ -224,9 +224,6 @@ def get_status(A):
 				
 				compute_durations(info, now=now)
 				
-				if 'ID' in info:
-					info['ID'] = str(info['ID'])
-				
 				jobs[ID] = info
 		
 		if job is None:
@@ -247,10 +244,20 @@ def get_status(A):
 				
 				cols = [c for c in cols if c in job]
 				
+				try:
+					idx = cols.index('ID')
+				except ValueError:
+					idx = None
+				
+				
 				rows = []
 				for ID in sort_jobkeys(A, jobs):
 					info = jobs[ID]
 					rows.append([info.get(key, '--') for key in cols])
+				
+				if idx is not None:
+					for row in rows:
+						row[idx] = f'*{row[idx]}'
 				
 				print(tabulate(rows, headers=cols))
 		
