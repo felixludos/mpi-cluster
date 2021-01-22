@@ -205,9 +205,10 @@ def get_status(A):
 			failed.extend(starts.get('failed', []))
 			if 'failed' in starts:
 				del starts['failed']
-			failed.extend(reg.get('failed', []))
-			if 'failed' in reg:
-				del reg['failed']
+			if reg is not None:
+				failed.extend(reg.get('failed', []))
+				if 'failed' in reg:
+					del reg['failed']
 			failed.extend(terminals.get('failed', []))
 			if 'failed' in terminals:
 				del terminals['failed']
