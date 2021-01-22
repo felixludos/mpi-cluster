@@ -60,7 +60,7 @@ def process_tsv(name, root, A, cols=None, include_event=None):
 	
 	for info in full:
 		ID = info.get('ID', 'failed')
-		if ID in jobs:
+		if ID not in jobs:
 			jobs[ID] = []
 		jobs[ID].append(info)
 	
