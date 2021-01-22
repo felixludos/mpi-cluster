@@ -10,6 +10,8 @@ from omnibelt import load_json, load_tsv, recover_date, save_json, load_yaml, sa
 
 import omnifig as fig
 
+from IPython.core.debugger import set_trace
+
 from cluster_src import fmt_jobdir, collect_q_cmd
 # from cluster_src.cluster import COLATTRS
 
@@ -168,7 +170,7 @@ def get_status(A):
 				else:
 					failed.append(job)
 		
-		if not active_only:
+		if not active_only or len(jobs):
 			
 			jobdir = fmt_jobdir(A.pull('jobdir', None))
 			
@@ -228,6 +230,8 @@ def get_status(A):
 					full[ID]['events'].extend(entries)
 					full[ID]['events'] = sorted(full[ID]['events'], key=lambda x: x['date'])
 			
+			set_trace()
+			
 			for ID, info in full.items():
 				if ID not in jobs:
 					info['status'] = 'missing' if not len(info['events']) \
@@ -236,41 +240,45 @@ def get_status(A):
 				compute_durations(info, now=now)
 				
 				jobs[ID] = info
-		
-		if job is None:
-			jobs = None
-			if print_status:
-				print('No jobs running.')
-		
-		else:
-			pkl_name = A.pull('pickle-status', None)
-			if pkl_name is not None:
-				if '.p' not in pkl_name:
-					pkl_name = f'{pkl_name}.p'
-				with open(pkl_name, 'w') as f:
-					pickle.dump({'jobs':jobs, 'failed':failed}, f)
-				print(f'Pickled status to: {pkl_name}')
 			
+			# else:
+			# 	pkl_name = A.pull('pickle-status', None)
+			# 	if pkl_name is not None:
+			# 		if '.p' not in pkl_name:
+			# 			pkl_name = f'{pkl_name}.p'
+			# 		with open(pkl_name, 'w') as f:
+			# 			pickle.dump({'jobs':jobs, 'failed':failed}, f)
+			# 		print(f'Pickled status to: {pkl_name}')
+				
 			if print_status:
 				
-				cols = [c for c in cols if c in job]
+				if len(jobs):
 				
-				try:
-					idx = cols.index('ID')
-				except ValueError:
-					idx = None
-				
-				
-				rows = []
-				for ID in sort_jobkeys(A, jobs):
-					info = jobs[ID]
-					rows.append([info.get(key, '--') for key in cols])
-				
-				if idx is not None:
-					for row in rows:
-						row[idx] = f'*{row[idx]}'
-				
-				print(tabulate(rows, headers=cols))
+					cols = [c for c in cols if c in job]
+					
+					try:
+						idx = cols.index('ID')
+					except ValueError:
+						idx = None
+					
+					
+					rows = []
+					for ID in sort_jobkeys(A, jobs):
+						info = jobs[ID]
+						rows.append([info.get(key, '--') for key in cols])
+					
+					if idx is not None:
+						for row in rows:
+							row[idx] = f'*{row[idx]}'
+					
+					print(tabulate(rows, headers=cols))
+					
+				else:
+					print('No jobs running.')
+					
+		
+		elif print_status:
+			print('No jobs running.')
 		
 		if len(failed) and not A.pull('skip-failed', False):
 			print()
