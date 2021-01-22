@@ -279,7 +279,7 @@ def get_status(A):
 						for row in rows:
 							row[idx] = f'*{row[idx]}'
 					
-					print(tabulate(rows, headers=cols))
+					print(tabulate(rows, headers=cols, floatfmt='.2f'))
 					
 				else:
 					print('No jobs running.')
