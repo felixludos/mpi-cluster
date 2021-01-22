@@ -2,6 +2,7 @@
 
 
 git_repos:
+  - /home/fleeb/workspace/code/mpi-cluster
   - /home/fleeb/workspace/code/belt
   - /home/fleeb/workspace/code/humpack
   - /home/fleeb/workspace/code/omni-fig
