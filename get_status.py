@@ -162,13 +162,15 @@ def get_status(A):
 		jobs = {}
 		failed = []
 		
-		job = None
 		if active is not None:
 			for job in active:
 				if 'ID' in job:
 					jobs[job['ID']] = job
 				else:
 					failed.append(job)
+		
+		print('active')
+		print(jobs)
 		
 		if not active_only or len(jobs):
 			
@@ -186,6 +188,8 @@ def get_status(A):
 				for i, cmd in enumerate(entry.get('commands', [None]*entry['procs'])):
 					ID = f'{jnum}.{i}'
 					if ID not in jobs:
+						if active_only:
+							continue
 						jobs[ID] = {'ID':ID}
 					job = jobs[ID]
 					if cmd is not None:
@@ -196,6 +200,9 @@ def get_status(A):
 					bid = entry.get('bid', None)
 					if bid is not None:
 						job['bid'] = bid
+			
+			print('after manifest')
+			print(jobs)
 			
 			starts = process_tsv('starts', jobdir, A, cols=['name', 'ID', 'date', 'host'],
 			                     include_event='start')
@@ -242,9 +249,9 @@ def get_status(A):
 				else:
 					jobs[ID] = info
 			
-			# print(full)
-			# print()
-			# print(jobs)
+			print(full)
+			print()
+			print(jobs)
 
 			# set_trace()
 			
