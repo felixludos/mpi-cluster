@@ -153,6 +153,8 @@ def get_status(A):
 		
 		cols = A.pull('columns', ['status', 'name', 'ID', 'host', 'start', 'duration', 'wait', 'end', 'run'])
 		
+		pkl_name = A.pull('pickle-status', None)
+		
 		active_only = A.pull('only-active', False)
 		
 		active = None if A.pull('no-active', False) else collect_q_cmd(user, silent=True)
@@ -293,7 +295,6 @@ def get_status(A):
 				print(f)
 			print()
 	
-		pkl_name = A.pull('pickle-status', None)
 		if pkl_name is not None:
 			if '.p' not in pkl_name:
 				pkl_name = f'{pkl_name}.p'
