@@ -230,6 +230,9 @@ def get_status(A):
 					full[ID]['events'].extend(entries)
 					full[ID]['events'] = sorted(full[ID]['events'], key=lambda x: x['date'])
 			
+			print(full)
+			print()
+			print(jobs)
 			
 			for ID, info in full.items():
 				if ID not in jobs:
@@ -238,8 +241,14 @@ def get_status(A):
 				
 				compute_durations(info, now=now)
 				
-				jobs[ID] = info
+				if ID in jobs:
+					jobs[ID].update(info)
+				else:
+					jobs[ID] = info
 			
+			print(full)
+			print()
+			print(jobs)
 
 			# set_trace()
 			
