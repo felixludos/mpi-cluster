@@ -155,7 +155,7 @@ def get_status(A):
 		
 		active_only = A.pull('only-active', False)
 		
-		active = None if A.pull('no-active', not active_only) else collect_q_cmd(user, silent=True)
+		active = None if A.pull('no-active', False) else collect_q_cmd(user, silent=True)
 		
 		now = datetime.now()
 		
