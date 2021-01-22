@@ -23,6 +23,9 @@ def process_tsv(name, root, A, cols=None, include_event=None):
 	
 	data = load_tsv(path)
 	
+	if not len(data[-1]) or (len(data[-1]) == 1 and not len(data[-1][0])):
+		data.pop()
+	
 	if cols is None:
 		return data
 	
