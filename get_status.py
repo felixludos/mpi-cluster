@@ -239,12 +239,10 @@ def get_status(A):
 				
 				compute_durations(info, now=now)
 				
+				info['status'] = 'missing' if not len(info['events']) \
+			                              or info['events'][-1]['event'] != 'end' else 'ended'
 				if ID not in jobs:
-					if not active_only:
-						info['status'] = 'missing' if not len(info['events']) \
-					                              or info['events'][-1]['event'] != 'end' else 'ended'
-						jobs[ID] = info
-				
+					jobs[ID] = info
 				else:
 					jobs[ID].update(info)
 				
