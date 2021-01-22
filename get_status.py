@@ -197,18 +197,22 @@ def get_status(A):
 			
 			starts = process_tsv('starts', jobdir, A, cols=['name', 'ID', 'date', 'host'],
 			                     include_event='start')
+			if starts is None:
+				starts = {}
 			terminals = process_tsv('terminals', jobdir, A, cols=['name', 'ID', 'date', 'host', 'code'],
 			                        include_event='end')
+			if terminals is None:
+				terminals = {}
 			reg = process_tsv('registry', jobdir, A, cols=['name', 'ID', 'run'])
-
+			if reg is None:
+				reg = {}
 			
 			failed.extend(starts.get('failed', []))
 			if 'failed' in starts:
 				del starts['failed']
-			if reg is not None:
-				failed.extend(reg.get('failed', []))
-				if 'failed' in reg:
-					del reg['failed']
+			failed.extend(reg.get('failed', []))
+			if 'failed' in reg:
+				del reg['failed']
 			failed.extend(terminals.get('failed', []))
 			if 'failed' in terminals:
 				del terminals['failed']
