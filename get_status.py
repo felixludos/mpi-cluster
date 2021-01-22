@@ -168,6 +168,7 @@ def get_status(A):
 			for job in active:
 				if 'ID' in job:
 					jobs[job['ID']] = job
+					jobs['active'] = True
 				else:
 					failed.append(job)
 		
@@ -180,17 +181,16 @@ def get_status(A):
 				save_yaml(None, manifest_path)
 			manifest = load_yaml(manifest_path)
 			if manifest is None:
-				manifest = []
+				manifest = {}
 			
 			for name, entry in manifest.items():
 				jnum = entry['ID']
 				for i, cmd in enumerate(entry.get('commands', [None]*entry['procs'])):
 					ID = f'{jnum}.{i}'
 					if ID not in jobs:
-						if active_only:
-							continue
 						jobs[ID] = {'ID':ID}
 					job = jobs[ID]
+					job['name'] = name
 					if cmd is not None:
 						job['command'] = cmd
 					submit_date = entry.get('date', None)
@@ -234,27 +234,20 @@ def get_status(A):
 					full[ID]['events'] = sorted(full[ID]['events'], key=lambda x: x['date'])
 			
 			for ID, info in full.items():
-				if ID not in jobs:
-					info['status'] = 'missing' if not len(info['events']) \
-					                              or info['events'][-1]['event'] != 'end' else 'ended'
+				if len(info['events']):
+					info['start'] = info['events'][0]['date']
 				
 				compute_durations(info, now=now)
 				
-				if ID in jobs:
-					jobs[ID].update(info)
+				if ID not in jobs:
+					if not active_only:
+						info['status'] = 'missing' if not len(info['events']) \
+					                              or info['events'][-1]['event'] != 'end' else 'ended'
+						jobs[ID] = info
+				
 				else:
-					jobs[ID] = info
-			
-			# set_trace()
-			
-			# else:
-			# 	pkl_name = A.pull('pickle-status', None)
-			# 	if pkl_name is not None:
-			# 		if '.p' not in pkl_name:
-			# 			pkl_name = f'{pkl_name}.p'
-			# 		with open(pkl_name, 'w') as f:
-			# 			pickle.dump({'jobs':jobs, 'failed':failed}, f)
-			# 		print(f'Pickled status to: {pkl_name}')
+					jobs[ID].update(info)
+				
 				
 			if print_status:
 				
@@ -268,11 +261,13 @@ def get_status(A):
 						idx = cols.index('ID')
 					except ValueError:
 						idx = None
-					
+						
 					
 					rows = []
 					for ID in sort_jobkeys(A, jobs):
 						info = jobs[ID]
+						if active_only and 'active' not in info:
+							continue
 						rows.append([info.get(key, '--') for key in cols])
 					
 					if idx is not None:
