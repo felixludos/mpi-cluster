@@ -203,11 +203,14 @@ def get_status(A):
 
 			
 			failed.extend(starts.get('failed', []))
-			del starts['failed']
+			if 'failed' in starts:
+				del starts['failed']
 			failed.extend(reg.get('failed', []))
-			del reg['failed']
+			if 'failed' in reg:
+				del reg['failed']
 			failed.extend(terminals.get('failed', []))
-			del terminals['failed']
+			if 'failed' in terminals:
+				del terminals['failed']
 			
 			full = {}
 			
