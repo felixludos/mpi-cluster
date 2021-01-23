@@ -168,7 +168,7 @@ def get_status(A):
 			for job in active:
 				if 'ID' in job:
 					jobs[job['ID']] = job
-					jobs['active'] = True
+					job['active'] = True
 				else:
 					failed.append(job)
 		
@@ -239,12 +239,15 @@ def get_status(A):
 				
 				compute_durations(info, now=now)
 				
-				info['status'] = 'missing' if not len(info['events']) \
-			                              or info['events'][-1]['event'] != 'end' else 'ended'
+				
 				if ID not in jobs:
 					jobs[ID] = info
 				else:
 					jobs[ID].update(info)
+				
+				if 'status' not in jobs[ID]:
+					jobs[ID]['status'] = 'missing' if not len(info['events']) \
+					                              or info['events'][-1]['event'] != 'end' else 'ended'
 				
 				
 			if print_status:
