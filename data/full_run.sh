@@ -291,15 +291,17 @@ unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle-shape --info.extr
 #unbuffer fig train ex/load-3ds --load-model 3ds_vae1_e-c12_d-c12_xa_210424-022638 --info.extra xa-vae-both
 
 
-unbuffer fig train hybrid a/conv16 m/ae d/rfd --info.extra mish --model.nonlin mish
-unbuffer fig train hybrid a/conv16 m/vae d/rfd --info.extra mish --model.nonlin mish
-unbuffer fig train hybrid a/conv16 m/vae d/rfd --reg-wt 2 --info.extra mish --model.nonlin mish
-unbuffer fig train hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra mish --model.nonlin mish
-unbuffer fig train nosplit hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra nosplit-mish --model.nonlin mish
-unbuffer fig train hybrid a/ladder/16 m/vae d/rfd --info.extra mish --model.nonlin mish
+#unbuffer fig train hybrid a/conv16 m/ae d/rfd --info.extra mish --model.nonlin mish
+#unbuffer fig train hybrid a/conv16 m/vae d/rfd --info.extra mish --model.nonlin mish
+#unbuffer fig train hybrid a/conv16 m/vae d/rfd --reg-wt 2 --info.extra mish --model.nonlin mish
+#unbuffer fig train hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra mish --model.nonlin mish
+#unbuffer fig train nosplit hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra nosplit-mish --model.nonlin mish
+#unbuffer fig train hybrid a/ladder/16 m/vae d/rfd --info.extra mish --model.nonlin mish
 
 
-unbuffer fig train hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra mish --model.nonlin mish --model.optim.lr 0.0005
+#unbuffer fig train hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra mish --model.nonlin mish --model.optim.lr 0.0005
 
+#unbuffer fig train hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra lrp0005 --model.optim.lr 0.0005
+#unbuffer fig train hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd
 
 

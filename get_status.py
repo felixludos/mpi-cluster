@@ -269,7 +269,10 @@ def get_status(A):
 						info = jobs[ID]
 						if active_only and 'active' not in info:
 							continue
-						rows.append([info.get(key, '--') for key in cols])
+						row = [info.get(key, '--') for key in cols]
+						row = [f'{r:.2g}' if isinstance(r, float) else r for r in row]
+						
+						rows.append(row)
 					
 					if idx is not None:
 						for row in rows:
