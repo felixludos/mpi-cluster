@@ -270,7 +270,7 @@ def get_status(A):
 						if active_only and 'active' not in info:
 							continue
 						row = [info.get(key, '--') for key in cols]
-						row = [f'{r:.2g}' if isinstance(r, float) else r for r in row]
+						row = [f'{r:.3g}' if isinstance(r, float) else r for r in row]
 						
 						rows.append(row)
 					
