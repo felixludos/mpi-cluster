@@ -9,7 +9,7 @@ include-cmds: true # in manifest
 
 template-path: /home/fleeb/workspace/code/mpi-cluster/data/template.sh
 
-working-dir: /home/fleeb/workspace/code/learn_rep
+working-dir: /home/fleeb/workspace/code/ideas
 
 gpu: 1
 ram: 48
