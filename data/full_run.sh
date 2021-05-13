@@ -142,3 +142,164 @@ fi
 
 echo '-- job complete --'
 
+
+# unbuffer fig train hybrid  a/e/conv12 a/d/strc/12 m/ae d/3ds --info.extra d24 --latent-dim 24 # job_052 9647102.12
+# unbuffer fig train hybrid  a/e/conv12 a/d/strc/12 m/ae d/3ds # job_052 9647102.13
+
+# unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/wae d/3ds # job_054 9660268.0
+
+# unbuffer fig train hybrid  a/e/conv12 a/d/strc/12 m/ae d/3ds --info.extra d24-lr0001 --latent-dim 24 --model.optim.lr 0.0001 # job_055 9660271.0
+
+# unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/wae d/3ds --model.optim.lr 0.0001 # job_056 9666816.0
+# unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/wae d/3ds --info.extra seed2 --seed 2 --model.optim.lr 0.0001 # job_056 9666816.1
+# unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/wae d/3ds --info.extra seed3 --seed 3 --model.optim.lr 0.0001 # job_056 9666816.2
+
+# unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/3ds --info.extra relu-seed10 --seed 10 --model.nonlin relu # job_055 9660271.2
+# unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/3ds --info.extra lrelu-seed10 --seed 10 --model.nonlin lrelu # job_055 9660271.3
+# unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/3ds --info.extra tanh-seed10 --seed 10 --model.nonlin tanh # job_055 9660271.4
+
+# unbuffer fig train hybrid a/conv12 m/vae d/3ds # job_052 9647102.8
+# unbuffer fig train hybrid a/conv12 m/vae d/3ds --info.extra b2 --reg-wt 2 # job_052 9647102.9
+# unbuffer fig train hybrid a/conv12 m/vae d/3ds --info.extra b4 --reg-wt 4 # job_052 9647102.10
+# unbuffer fig train hybrid a/conv12 m/vae d/3ds --info.extra b8 --reg-wt 8 # job_052 9647102.11
+
+# unbuffer fig train hybrid a/conv m/wae d/3ds # job_051 9612252.1
+
+######
+
+# 57
+#unbuffer fig train hybrid a/conv12 m/ae d/syn/cppn
+#unbuffer fig train hybrid a/conv12 m/wae d/syn/cppn
+#unbuffer fig train hybrid a/conv12 m/vae d/syn/cppn
+#unbuffer fig train hybrid a/conv12 m/vae d/syn/cppn --reg-wt 2
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/syn/cppn
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/syn/cppn
+
+##
+
+#unbuffer fig train hybrid a/conv12 m/ae ex/angle-shape --info.extra xas
+#unbuffer fig train hybrid a/conv12 m/wae ex/angle-shape --info.extra xas
+#unbuffer fig train hybrid a/conv12 m/vae ex/angle-shape --info.extra xas
+#unbuffer fig train hybrid a/conv12 m/vae ex/angle-shape --info.extra xas --reg-wt 2
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle-shape --info.extra xas
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle-shape --info.extra xas-s2 --seed 2
+
+##
+
+#unbuffer fig train hybrid a/conv12 m/ae ex/angle --info.extra xa
+#unbuffer fig train hybrid a/conv12 m/wae ex/angle --info.extra xa
+#unbuffer fig train hybrid a/conv12 m/vae ex/angle --info.extra xa
+#unbuffer fig train hybrid a/conv12 m/vae ex/angle --info.extra xa --reg-wt 2
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle --info.extra xa
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle --info.extra xa-s2 --seed 2
+
+##
+
+#unbuffer fig train hybrid a/conv12 m/vae d/syn/scm d/syn/vec --info.extra scm-n6 --num-nodes 6
+#unbuffer fig train hybrid a/conv12 m/vae d/syn/vec --info.extra n6 --num-nodes 6
+#
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/syn/scm d/syn/vec --info.extra scm-n6 --num-nodes 6
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/syn/vec --info.extra n6 --num-nodes 6
+#
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/syn/scm d/syn/vec --info.extra scm-nlin-n6 --num-nodes 6 --dataset.sampler.equation.hidden "[16,16]"
+#unbuffer fig train hybrid a/conv12 m/vae d/syn/scm d/syn/vec --info.extra scm-nlin-n6 --num-nodes 6 --dataset.sampler.equation.hidden "[16,16]"
+#
+#
+#unbuffer fig train hybrid a/conv12 m/vae d/syn/scm d/syn/cppn --info.extra scm-n6 --num-nodes 6
+#unbuffer fig train hybrid a/conv12 m/vae d/syn/cppn --info.extra n6 --num-nodes 6
+#
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/syn/scm d/syn/cppn --info.extra scm-n6 --num-nodes 6
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/syn/cppn --info.extra n6 --num-nodes 6
+#
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae d/syn/scm d/syn/cppn --info.extra scm-nlin-n6 --num-nodes 6 --dataset.sampler.equation.hidden "[16,16]"
+#unbuffer fig train hybrid a/conv12 m/vae d/syn/scm d/syn/cppn --info.extra scm-nlin-n6 --num-nodes 6 --dataset.sampler.equation.hidden "[16,16]"
+
+##
+
+unbuffer fig train hybrid a/conv12 m/ae ex/angle-shape --info.extra xas
+unbuffer fig train hybrid a/conv12 m/wae ex/angle-shape --info.extra xas
+unbuffer fig train hybrid a/conv12 m/vae ex/angle-shape --info.extra xas
+unbuffer fig train hybrid a/conv12 m/vae ex/angle-shape --info.extra xas --reg-wt 2
+unbuffer fig train hybrid a/conv12 m/vae ex/angle-shape --info.extra xas --reg-wt 4
+unbuffer fig train hybrid a/e/conv12 a/d/strc/6 m/ae ex/angle-shape --info.extra xas
+unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle-shape --info.extra xas
+unbuffer fig train hybrid a/ladder/12 m/vae ex/angle-shape --info.extra xas
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle-shape --info.extra xas-s2 --seed 2
+
+#
+
+unbuffer fig train hybrid a/conv12 m/ae ex/angle --info.extra xa
+unbuffer fig train hybrid a/conv12 m/wae ex/angle --info.extra xa
+unbuffer fig train hybrid a/conv12 m/vae ex/angle --info.extra xa
+unbuffer fig train hybrid a/conv12 m/vae ex/angle --info.extra xa --reg-wt 2
+unbuffer fig train hybrid a/e/conv12 a/d/strc/6 m/ae ex/angle --info.extra xa
+unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle --info.extra xa
+unbuffer fig train hybrid a/ladder/12 m/vae ex/angle --info.extra xa
+#unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle --info.extra xa-s2 --seed 2
+
+unbuffer fig train hybrid nosplit a/e/conv12 a/d/strc/12 m/ae ex/angle --info.extra xa
+unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle-shape --info.extra xas
+
+##3ds_vae2_e-c12_d-c12_xas_210424-022528
+#unbuffer fig train ex/load-3ds --model-override.freeze-encoder --load-model 3ds_vae2_e-c12_d-c12_xas_210424-022528 --info.extra xas-vae2-dec
+#unbuffer fig train ex/load-3ds --model-override.freeze-decoder --load-model 3ds_vae2_e-c12_d-c12_xas_210424-022528 --info.extra xas-vae2-enc
+#unbuffer fig train ex/load-3ds --load-model 3ds_vae2_e-c12_d-c12_xas_210424-022528 --info.extra xas-vae2-both
+#
+##3ds_wae10_e-c12_d-c12_xas_210424-022529
+#unbuffer fig train ex/load-3ds --model-override.freeze-encoder --load-model 3ds_wae10_e-c12_d-c12_xas_210424-022529 --info.extra xas-wae-dec
+#unbuffer fig train ex/load-3ds --model-override.freeze-decoder --load-model 3ds_wae10_e-c12_d-c12_xas_210424-022529 --info.extra xas-wae-enc
+#unbuffer fig train ex/load-3ds --load-model 3ds_wae10_e-c12_d-c12_xas_210424-022529 --info.extra xas-wae-both
+#
+##3ds_ae_e-c12_d-s12_xas_210424-022530
+#unbuffer fig train ex/load-3ds --model-override.freeze-encoder --load-model 3ds_ae_e-c12_d-s12_xas_210424-022530 --info.extra xas-s12-dec
+#unbuffer fig train ex/load-3ds --model-override.freeze-decoder --load-model 3ds_ae_e-c12_d-s12_xas_210424-022530 --info.extra xas-s12-enc
+#unbuffer fig train ex/load-3ds --load-model 3ds_ae_e-c12_d-s12_xas_210424-022530 --info.extra xas-s12-both
+#
+##3ds_vae1_e-c12_d-c12_xas_210424-022530
+#unbuffer fig train ex/load-3ds --model-override.freeze-encoder --load-model 3ds_vae1_e-c12_d-c12_xas_210424-022530 --info.extra xas-vae-dec
+#unbuffer fig train ex/load-3ds --model-override.freeze-decoder --load-model 3ds_vae1_e-c12_d-c12_xas_210424-022530 --info.extra xas-vae-enc
+#unbuffer fig train ex/load-3ds --load-model 3ds_vae1_e-c12_d-c12_xas_210424-022530 --info.extra xas-vae-both
+#
+##3ds_ae_e-c12_d-c12_xas_210424-022530
+#unbuffer fig train ex/load-3ds --model-override.freeze-encoder --load-model 3ds_ae_e-c12_d-c12_xas_210424-022530 --info.extra xas-ae-dec
+#unbuffer fig train ex/load-3ds --model-override.freeze-decoder --load-model 3ds_ae_e-c12_d-c12_xas_210424-022530 --info.extra xas-ae-enc
+#unbuffer fig train ex/load-3ds --load-model 3ds_ae_e-c12_d-c12_xas_210424-022530 --info.extra xas-ae-both --info.extra xas-ae-both
+#
+##3ds_wae10_e-c12_d-c12_xa_210424-022636
+#unbuffer fig train ex/load-3ds --model-override.freeze-encoder --load-model 3ds_wae10_e-c12_d-c12_xa_210424-022636 --info.extra xa-wae-dec
+#unbuffer fig train ex/load-3ds --model-override.freeze-decoder --load-model 3ds_wae10_e-c12_d-c12_xa_210424-022636 --info.extra xa-wae-enc
+#unbuffer fig train ex/load-3ds --load-model 3ds_wae10_e-c12_d-c12_xa_210424-022636 --info.extra xa-wae-both
+#
+##3ds_ae_e-c12_d-c12_xa_210424-022637
+#unbuffer fig train ex/load-3ds --model-override.freeze-encoder --load-model 3ds_ae_e-c12_d-c12_xa_210424-022637 --info.extra xa-ae-dec
+#unbuffer fig train ex/load-3ds --model-override.freeze-decoder --load-model 3ds_ae_e-c12_d-c12_xa_210424-022637 --info.extra xa-ae-enc
+#unbuffer fig train ex/load-3ds --load-model 3ds_ae_e-c12_d-c12_xa_210424-022637 --info.extra xa-ae-both
+#
+##3ds_vae2_e-c12_d-c12_xa_210424-022637
+#unbuffer fig train ex/load-3ds --model-override.freeze-encoder --load-model 3ds_vae2_e-c12_d-c12_xa_210424-022637 --info.extra xa-vae2-dec
+#unbuffer fig train ex/load-3ds --model-override.freeze-decoder --load-model 3ds_vae2_e-c12_d-c12_xa_210424-022637 --info.extra xa-vae2-enc
+#unbuffer fig train ex/load-3ds --load-model 3ds_vae2_e-c12_d-c12_xa_210424-022637 --info.extra xa-vae2-both
+#
+##3ds_ae_e-c12_d-s12_xa_210424-022637
+#unbuffer fig train ex/load-3ds --model-override.freeze-encoder --load-model 3ds_ae_e-c12_d-s12_xa_210424-022637 --info.extra xa-s12-dec
+#unbuffer fig train ex/load-3ds --model-override.freeze-decoder --load-model 3ds_ae_e-c12_d-s12_xa_210424-022637 --info.extra xa-s12-enc
+#unbuffer fig train ex/load-3ds --load-model 3ds_ae_e-c12_d-s12_xa_210424-022637 --info.extra xa-s12-both
+#
+##3ds_vae1_e-c12_d-c12_xa_210424-022638
+#unbuffer fig train ex/load-3ds --model-override.freeze-encoder --load-model 3ds_vae1_e-c12_d-c12_xa_210424-022638 --info.extra xa-vae-dec
+#unbuffer fig train ex/load-3ds --model-override.freeze-decoder --load-model 3ds_vae1_e-c12_d-c12_xa_210424-022638 --info.extra xa-vae-enc
+#unbuffer fig train ex/load-3ds --load-model 3ds_vae1_e-c12_d-c12_xa_210424-022638 --info.extra xa-vae-both
+
+
+unbuffer fig train hybrid a/conv16 m/ae d/rfd --info.extra mish --model.nonlin mish
+unbuffer fig train hybrid a/conv16 m/vae d/rfd --info.extra mish --model.nonlin mish
+unbuffer fig train hybrid a/conv16 m/vae d/rfd --reg-wt 2 --info.extra mish --model.nonlin mish
+unbuffer fig train hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra mish --model.nonlin mish
+unbuffer fig train nosplit hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra nosplit-mish --model.nonlin mish
+unbuffer fig train hybrid a/ladder/16 m/vae d/rfd --info.extra mish --model.nonlin mish
+
+
+unbuffer fig train hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra mish --model.nonlin mish --model.optim.lr 0.0005
+
+
+
