@@ -308,10 +308,10 @@ unbuffer fig train hybrid a/e/conv12 a/d/strc/12 m/ae ex/angle-shape --info.extr
 #unbuffer fig train hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra lrp0005-bs64 --model.optim.lr 0.0005 --dataset.batch_size 64
 #unbuffer fig train hybrid a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra lrp001-bs64 --model.optim.lr 0.001 --dataset.batch_size 64
 
-unbuffer fig train hybrid nosplit a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra nosplit
-unbuffer fig train hybrid scheduler nosplit a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra nosplit-sch
-unbuffer fig train hybrid scheduler a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra sch
-unbuffer fig train hybrid nosplit a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra lrp00005 --model.optim.lr 0.00005
+#unbuffer fig train hybrid nosplit a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra nosplit-bs64 --dataset.batch_size 64
+#unbuffer fig train hybrid scheduler nosplit a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra nosplit-sch-bs64 --dataset.batch_size 64
+#unbuffer fig train hybrid scheduler a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra sch-bs64 --dataset.batch_size 64
+#unbuffer fig train hybrid nosplit a/d/strc/16 a/e/conv16 m/ae d/rfd --info.extra lrp00005-bs64 --model.optim.lr 0.00005 --dataset.batch_size 64
 
 
 

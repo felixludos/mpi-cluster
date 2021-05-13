@@ -278,7 +278,7 @@ def get_status(A):
 						for row in rows:
 							row[idx] = row[idx].replace('.', '֎')
 					
-					tbl = tabulate(rows, headers=cols, floatfmt='.2f').replace('֎', '.')
+					tbl = tabulate(rows, headers=cols, floatfmt='.3g').replace('֎', '.')
 					print(tbl)
 					
 				else:
