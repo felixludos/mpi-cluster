@@ -12,7 +12,7 @@ import omnifig as fig
 
 # from IPython.core.debugger import set_trace
 
-from cluster_src import fmt_jobdir, collect_q_cmd
+from . import fmt_jobdir, collect_q_cmd
 # from cluster_src.cluster import COLATTRS
 
 def process_tsv(name, root, A, cols=None, include_event=None):

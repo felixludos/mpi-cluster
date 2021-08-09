@@ -3,4 +3,4 @@ name: manager
 
 related: [foundation]
 
-src: startup.py
+package: src
