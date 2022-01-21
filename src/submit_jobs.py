@@ -251,7 +251,7 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		for line in raw:
 			if is_todo(line):
 				myid = i if ID is None else f'{ID}.{i}'
-				fixed.append(f'# {line} # {name} {myid}')
+				fixed.append(f'#{line} # {name} {myid}')
 				i += 1
 			else:
 				fixed.append(line)
