@@ -15,6 +15,8 @@ echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)" >> "/home/fleeb/j
 #pwd
 #nvidia-smi
 #ls
+# conda install -c eumetsat expect
+conda activate cluster
 
 <job>
 

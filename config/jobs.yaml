@@ -7,6 +7,8 @@ include-cmds: true # in manifest
 
 #include-date: true
 
+#conda install -c eumetsat expect
+
 template-path: /home/fleeb/workspace/code/mpi-cluster/data/template.sh
 
 working-dir: /home/fleeb/workspace/code/ideas
