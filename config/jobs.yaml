@@ -20,7 +20,9 @@ cpu: 4
 
 array: true
 
-gpu-names: V100-32
+#gpu-names: [V100-32]
+gpu-names: [A100-80, A100-40, Quadro, V100-32, V100-32-PCI, V100-16, 2080]
+#gpu-names: [K20, K80, P40, P100]
 
 time-limit: 10
 
