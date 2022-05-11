@@ -8,6 +8,8 @@ git_repos:
   - /home/fleeb/workspace/code/omni-fig
   - /home/fleeb/workspace/code/foundation
   - /home/fleeb/workspace/code/learn_rep
+  - /home/fleeb/workspace/code/NVAE
+  - /home/fleeb/workspace/code/plethora
   - /home/fleeb/workspace/code/adversary
   - /home/fleeb/workspace/code/ideas
 
