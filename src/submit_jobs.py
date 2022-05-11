@@ -153,6 +153,8 @@ def create_jobs(A):
 
 	avoid = A.pull('avoid', None)
 	if avoid is not None and len(avoid):
+		if isinstance(avoid, str):
+			avoid = avoid.split(':')
 		reqs.extend(f'Target.Machine != "{node}.internal.cluster.is.localnet"' for node in avoid)
 		print(f'Avoiding: {avoid}')
 
