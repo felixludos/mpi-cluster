@@ -1,0 +1,4 @@
+
+gpu-names:
+  A100-80: yes
+  A100-40: yes

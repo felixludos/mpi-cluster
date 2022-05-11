@@ -1,0 +1,7 @@
+
+gpu-names:
+  2080: yes
+  K20: yes
+  K80: yes
+  P40: yes
+  P100: yes

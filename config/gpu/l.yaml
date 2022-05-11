@@ -1,0 +1,4 @@
+
+gpu-names:
+  V100-32: yes
+  V100-32-pci: yes

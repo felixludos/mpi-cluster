@@ -1,0 +1,4 @@
+
+gpu-names:
+  V100-16: yes
+  Quadro: yes
