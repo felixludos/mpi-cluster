@@ -29,6 +29,6 @@ time-limit: 10
 
 bid: 50
 
-avoid: p004
+#avoid: p004
 
 
