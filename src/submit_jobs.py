@@ -177,6 +177,20 @@ on_exit_hold_reason = "Checkpointed, will resume"
 on_exit_hold_subcode = 2
 periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReasonSubCode =?= 1) || (HoldReasonSubCode =?= 2)) )''')
 
+	max_running_price = A.pull("max-running-price", None)
+    running_price_exceeded_action = A.pull("running-price-exceeded-action", "kill")
+    if max_running_price is not None:
+        sub.append(f"+MaxRunningPrice = {max_running_price}")
+        if running_price_exceeded_action == "kill":
+            print(f"Job will be killed if running price exceeds {max_running_price}")
+        elif running_price_exceeded_action == "restart":
+            print(f"Job will be restarted if running price exceeds {max_running_price}")
+        else:
+            print(f"Unknown running price exceeded action {running_price_exceeded_action}")
+            running_price_exceeded_action = "kill"
+            print(f"Job will be killed if running price exceeds {max_running_price}")
+        sub.append(f'+RunningPriceExceededAction = "{running_price_exceeded_action}"')
+
 	stdoutname = 'stdout-$(Process).txt'
 	stdout_path = os.path.join(path, stdoutname)
 	logname = 'log-$(Process).txt'
