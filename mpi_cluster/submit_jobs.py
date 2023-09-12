@@ -1,23 +1,21 @@
-
 import sys, os
+from pathlib import Path
 import time
 
 from contextlib import redirect_stdout, redirect_stderr
 import io
-
 import subprocess
-
-
-from datetime import datetime
-from omnibelt import load_json, save_json, create_dir, load_yaml, save_yaml
-
 from tabulate import tabulate
+from datetime import datetime
 
+from omnibelt import load_json, save_json, create_dir, load_yaml, save_yaml
 import omnifig as fig
 
 from . import fmt_jobdir, GPU_NAMES, SUBMISSION_FORMAT, write_job, is_todo
+from . import misc
 
-@fig.AutoScript('git-pull', description='Pull several git repos')
+
+@fig.autoscript('git-pull', description='Pull several git repos')
 def git_update(git_repos=None):
 	if git_repos is not None and isinstance(git_repos, (list, tuple)):
 		for gd in git_repos:
@@ -26,50 +24,59 @@ def git_update(git_repos=None):
 
 
 # @fig.Script('prep-jobs', description='Prepare jobs for the cluster')
-@fig.Script('submit', description='Submit jobs to the cluster')
-def create_jobs(A):
+@fig.script('submit', description='Submit jobs to the cluster')
+def create_jobs(A: fig.Node):
 
-	root = A.push('root', os.environ['HOME'], overwrite=False)
+	root = A.push('root', None, overwrite=False)
+	if root is not None:
+		root = Path(root)
 	
-	commands = A.pull('commands', '<>command', None)
+	commands = A.pulls('commands', 'command', default=None)
 	if isinstance(commands, str):
 		commands = [commands]
 	
 	cmd_path = None
 	if commands is None:
-		cmd_path = A.pull('command-path', '<>cmd-path', '<>path', None)
+		cmd_path = A.pulls('command-path', 'cmd-path', 'path', default=None)
 
 		if cmd_path is not None:
-			if not os.path.isfile(cmd_path):
-				cmd_path = os.path.join(root, cmd_path)
+			cmd_path = Path(cmd_path)
+			if root is not None:
+				cmd_path = root / cmd_path
+			if not cmd_path.exists():
+				raise FileNotFoundError(f'command file not found: {cmd_path}')
 			commands = []
-			with open(cmd_path, 'r') as f:
-				for line in f.read().split('\n'):
+			with cmd_path.open('r') as f:
+				for line in f.readlines():
 					if len(line) and line[0] != '#':
 						commands.append(line)
 
 	if not len(commands):
-		raise Exception('no commands to submit')
+		raise ValueError('No commands provided')
 
 	update_cmds = A.pull('update-cmds', True)
 	include_cmds = A.pull('include-cmds', False)
 
-	template = A.push('template', None, silent=True)
-
+	template = A.pull('template', None, silent=True)
 	if template is None:
-
 		template_path = A.pull('template-path', None)
 		if template_path is not None:
+			template_path = Path(template_path)
+			if root is not None:
+				template_path =
+			template_path = root / template_path
 			if not os.path.isfile(template_path):
 				template_path = os.path.join(root, template_path)
 	
 			with open(template_path, 'r') as f:
 				template = f.read()
 
-
 	print(f'Will submit {len(commands)} jobs.')
 
-	jobdir = fmt_jobdir(A.pull('jobdir', None))
+	jobdir = A.pull('job-dir', None, silent=True)
+	jobdir = misc.default_jobdir() if jobdir is None else Path(jobdir)
+	jobdir.mkdir(exist_ok=True, parents=True)
+	A.print(f'Using job-dir: {jobdir}')
 
 	manifest_path = os.path.join(jobdir, 'manifest.yaml')
 
@@ -119,7 +126,7 @@ def create_jobs(A):
 	
 	job_path = os.path.join(path, 'job-$(Process).sh')
 	sub.append(f'environment = JOBDIR={path};JOBEXEC={job_path};PROCESS_ID=$(Process);'
-	           f'JOB_ID=$(ID);JOB_NAME={name};JOB_NUM={num}')
+			   f'JOB_ID=$(ID);JOB_NAME={name};JOB_NUM={num}')
 
 	reqs = []
 
@@ -178,18 +185,18 @@ on_exit_hold_subcode = 2
 periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReasonSubCode =?= 1) || (HoldReasonSubCode =?= 2)) )''')
 
 	max_running_price = A.pull("max-running-price", None)
-    running_price_exceeded_action = A.pull("running-price-exceeded-action", "kill")
-    if max_running_price is not None:
-        sub.append(f"+MaxRunningPrice = {max_running_price}")
-        if running_price_exceeded_action == "kill":
-            print(f"Job will be killed if running price exceeds {max_running_price}")
-        elif running_price_exceeded_action == "restart":
-            print(f"Job will be restarted if running price exceeds {max_running_price}")
-        else:
-            print(f"Unknown running price exceeded action {running_price_exceeded_action}")
-            running_price_exceeded_action = "kill"
-            print(f"Job will be killed if running price exceeds {max_running_price}")
-        sub.append(f'+RunningPriceExceededAction = "{running_price_exceeded_action}"')
+	running_price_exceeded_action = A.pull("running-price-exceeded-action", "kill")
+	if max_running_price is not None:
+		sub.append(f"+MaxRunningPrice = {max_running_price}")
+		if running_price_exceeded_action == "kill":
+			print(f"Job will be killed if running price exceeds {max_running_price}")
+		elif running_price_exceeded_action == "restart":
+			print(f"Job will be restarted if running price exceeds {max_running_price}")
+		else:
+			print(f"Unknown running price exceeded action {running_price_exceeded_action}")
+			running_price_exceeded_action = "kill"
+			print(f"Job will be killed if running price exceeds {max_running_price}")
+		sub.append(f'+RunningPriceExceededAction = "{running_price_exceeded_action}"')
 
 	stdoutname = 'stdout-$(Process).txt'
 	stdout_path = os.path.join(path, stdoutname)
@@ -197,10 +204,10 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 	log_path = os.path.join(path, logname)
 
 	sub.append(SUBMISSION_FORMAT.format(exec=job_path,
-	                                    err=stdout_path,
-	                                    out=stdout_path,
-	                                    log=log_path,
-	                                    procs=len(commands)))
+										err=stdout_path,
+										out=stdout_path,
+										log=log_path,
+										procs=len(commands)))
 
 	sub_path = os.path.join(path, 'submit.sub')
 	with open(sub_path, 'w') as f:
@@ -218,7 +225,7 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		
 		
 		process = subprocess.Popen(['condor_submit_bid', f'{bid}', f'{sub_path}'],
-		                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+								   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		out, err = process.communicate()
 		# print(out)
 		# print(err)

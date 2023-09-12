@@ -1,3 +1,4 @@
+__version__ = '0.1.0'
 from . import runs
 from .status import collect_q_cmd, parse_job_status
 from .cluster import GPU_NAMES, SUBMISSION_FORMAT
