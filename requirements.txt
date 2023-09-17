@@ -1,5 +1,4 @@
-omnibelt
-omnifig
+omnibelt>=0.8.1
+omnifig>=1.0
 tabulate
 tqdm
-pytest

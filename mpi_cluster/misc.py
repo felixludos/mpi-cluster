@@ -3,6 +3,8 @@ import sys, os
 from pathlib import Path
 
 import omnibelt as util
+import omnifig as fig
+
 
 
 def is_todo(line):
@@ -10,21 +12,22 @@ def is_todo(line):
 	return len(line) > 0 and line[0] != '#'
 
 
-def write_job(cmds, path, cddir=None, tmpl=None):
-	
-	if tmpl is None:
-		tmpl = '#!\n# <header>\n<job>'
-	
-	if cddir is not None:
-		tmpl = tmpl.replace('# <header>', f'cd {cddir}')
-	
-	if isinstance(cmds, (list, tuple)):
-		cmds = '\n'.join(cmds)
-	
-	tmpl = tmpl.replace('<job>', cmds)
-	
-	with open(path, 'w') as f:
-		f.write(tmpl)
+
+# def write_job(cmds: List[str], path: Path, cddir=None, tmpl=None):
+#
+# 	if tmpl is None:
+# 		tmpl = '#!\n{header}\n{job}\n{tail}'
+#
+# 	if cddir is not None:
+# 		tmpl = tmpl.replace('# <header>', f'cd {cddir}')
+#
+# 	if isinstance(cmds, (list, tuple)):
+# 		cmds = '\n'.join(cmds)
+#
+# 	tmpl = tmpl.replace('<job>', cmds)
+#
+# 	path.write_text(tmpl)
+
 
 
 def default_jobdir():
@@ -32,3 +35,4 @@ def default_jobdir():
 	if not jobdir.exists():
 		jobdir.mkdir()
 	return jobdir
+

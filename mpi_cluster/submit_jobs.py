@@ -8,25 +8,25 @@ import subprocess
 from tabulate import tabulate
 from datetime import datetime
 
-from omnibelt import load_json, save_json, create_dir, load_yaml, save_yaml
+from omnibelt import load_json, save_json, create_dir, load_yaml, save_yaml, load_txt, save_txt, pformat
 import omnifig as fig
 
-from . import fmt_jobdir, GPU_NAMES, SUBMISSION_FORMAT, write_job, is_todo
+from . import GPU_NAMES, SUBMISSION_FORMAT, is_todo
 from . import misc
+
 
 
 @fig.autoscript('git-pull', description='Pull several git repos')
 def git_update(git_repos=None):
 	if git_repos is not None and isinstance(git_repos, (list, tuple)):
 		for gd in git_repos:
-			os.system(f'cd {gd};git pull')
+			os.system(f'git -C {gd} pull')
 	return git_repos
 
 
-# @fig.Script('prep-jobs', description='Prepare jobs for the cluster')
-@fig.script('submit', description='Submit jobs to the cluster')
-def create_jobs(A: fig.Node):
 
+@fig.script('submit', description='Submit jobs to the cluster')
+def create_jobs(A: fig.Configuration):
 	root = A.push('root', None, overwrite=False)
 	if root is not None:
 		root = Path(root)
@@ -63,74 +63,96 @@ def create_jobs(A: fig.Node):
 		if template_path is not None:
 			template_path = Path(template_path)
 			if root is not None:
-				template_path =
-			template_path = root / template_path
-			if not os.path.isfile(template_path):
-				template_path = os.path.join(root, template_path)
-	
-			with open(template_path, 'r') as f:
-				template = f.read()
+				template_path = root / template_path
 
-	print(f'Will submit {len(commands)} jobs.')
+			if not template_path.exists():
+				raise FileNotFoundError(f'template file not found: {template_path}')
+			template = template_path.read_text()
+	if template is None:
+		template = ('#!'
+					'\n\n# Job Info: Name={name}, Process={process}, Date={{date}.strftime("%y%m%d-%H%M%S")}'
+					'\n# Header'
+					'\n{header}'
+					'\n\n# Job'
+					'\n{command}'
+					'\n\n# Tail'
+					'\n{tail}')
 
-	jobdir = A.pull('job-dir', None, silent=True)
-	jobdir = misc.default_jobdir() if jobdir is None else Path(jobdir)
-	jobdir.mkdir(exist_ok=True, parents=True)
-	A.print(f'Using job-dir: {jobdir}')
-
-	manifest_path = os.path.join(jobdir, 'manifest.yaml')
-
-	manifest = load_yaml(manifest_path) if os.path.isfile(manifest_path) else {}
-	num = len(manifest)
+	header = A.pull('header', 'cd {working_dir}', silent=True)
+	tail = A.pull('tail', '', silent=True)
 
 	rawname = A.pull('name', None)
 	name = rawname
 	if name is None:
 		name = 'job'
 
-	if A.pull('include-num', True) or name in manifest:
+	jobdir = A.pull('job-dir', str(Path(os.environ.get('HOME', os.getcwd())) / '.mpi_jobs'))
+	jobdir = Path(jobdir)
+	jobdir.mkdir(exist_ok=True, parents=True)
+
+	manifest_path = A.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True)
+	manifest_path = Path(manifest_path)
+
+	if A.pull('include-num', True):
+		with manifest_path.open('r') as f:
+			num = sum(1 for _ in f)
 		name = f'{name}_{str(num).zfill(3)}'
-
 	now = datetime.now()
-	if A.pull('include-date', False) or name in manifest:
-		snow = now.strftime("%y%m%d-%H%M%S")
-		name = f'{name}_{snow}'
+	if A.pull('include-date', False):
+		name = f'{name}_{now.strftime("%y%m%d-%H%M%S")}'
 
-	repos = A.pull('git-repos', '<>git_repos', [])
-	
+	path = jobdir / name
+
+	working_dir = A.pull('working-dir', None)
+	if working_dir is not None:
+		working_dir = Path(working_dir).resolve()
+
+	jobs = [
+		pformat(template,
+				working_dir=working_dir,
+				name=name, process=i, date=now, path=path,
+				header=header, command=cmd, tail=tail)
+	for i, cmd in enumerate(commands)]
+
+	A.print(f'Will submit {len(jobs)} jobs.')
+
+	repos = A.pull('git-repos', [])
 
 	bid = A.pull('bid', None)
 	if bid is None:
-		print('WARNING: job will not be submitted because there is no bid') # useful for dry runs
+		A.print('WARNING: job will not be submitted because there is no bid') # useful for dry runs
 
-
-	print(tabulate(enumerate(commands), headers=['i', 'command']))
+	A.print(tabulate(enumerate(commands), headers=['i', 'command']))
 	
 	confirm = A.pull('confirm', True, silent=True)
 	if confirm:
-		resp = input(f'Submit {len(commands)} jobs ([y]/n)? ')
-		if resp.lower() in {'n', 'no'}:
-			print('Nothing was submitted.')
-			return
+		resp = None
+		while resp is None:
+			resp = input(f'Submit {len(commands)} jobs ([y]/n)? ')
+			if resp.lower() in {'n', 'no'}:
+				print('Nothing was submitted.')
+				return
+			elif resp.lower() in {'y', 'yes', ''}:
+				break
+			else:
+				print(f'Invalid response: {resp!r}')
+				resp = None
 	A.push('confirm', False, silent=True)
 
-	path = os.path.join(jobdir, name)
-	create_dir(path)
-	
-	working_dir = A.pull('working-dir', None)
-	
-	for i, cmd in enumerate(commands):
-		write_job(cmd, os.path.join(path, f'job-{i}.sh'), cddir=working_dir, tmpl=template)
-	
+	path.mkdir(exist_ok=True, parents=True)
+	for i, job in enumerate(jobs):
+		job_path = path / f'job-{i}.sh'
+		job_path.write_text(job)
+
 	sub = []
 	
-	job_path = os.path.join(path, 'job-$(Process).sh')
+	job_path = path / 'job-$(Process).sh'
 	sub.append(f'environment = JOBDIR={path};JOBEXEC={job_path};PROCESS_ID=$(Process);'
 			   f'JOB_ID=$(ID);JOB_NAME={name};JOB_NUM={num}')
 
 	reqs = []
 
-	ram = A.pull('ram', '<>mem', 1) # in gb
+	ram = A.pulls('ram', 'mem', default=1) # in gb
 	cpu = A.pull('cpu', 1)
 	sub.append(f'request_memory = {ram * 1024}')
 	sub.append(f'request_cpus = {cpu}')
@@ -138,12 +160,12 @@ def create_jobs(A: fig.Node):
 	gpu = A.pull('gpu', 0)
 	if gpu > 0:
 		sub.append(f'request_gpus = {gpu}')
-		gpu_names = A.pull('gpu-names', '<>gpu-name', '<>gpu_names', None)
+		gpu_names = A.pulls('gpu-names', 'gpu-name', default=None)
 		if gpu_names is not None:
 			if isinstance(gpu_names, dict):
 				gpu_names = list(gpu_names)
 			if isinstance(gpu_names, str):
-				gpu_names = gpu_names.split(':')
+				gpu_names = gpu_names.split('|')
 			if not isinstance(gpu_names, (tuple, list)):
 				gpu_names = gpu_names,
 				
@@ -154,18 +176,19 @@ def create_jobs(A: fig.Node):
 				if gname in GPU_NAMES:
 					gnames.append(GPU_NAMES[gname])
 				else:
-					print(f'WARNING: Failed to recognize gpu name: {gname} (see source file for list)')
+					# raise ValueError(f'Failed to recognize gpu name: {gname} (see source file for list)')
+					A.print(f'WARNING: Failed to recognize gpu name: {gname} (see source file for list)')
 
 			if len(gnames):
 				reqs.append(' || '.join(f'CUDADeviceName == \"{gname}\"' for gname in gnames))
-				print('Requiring GPUs: {}'.format(' or '.join(gnames)))
+				A.print('Requiring GPUs: {}'.format(' or '.join(gnames)))
 
 	avoid = A.pull('avoid', None)
 	if avoid is not None and len(avoid):
 		if isinstance(avoid, str):
-			avoid = avoid.split(':')
+			avoid = avoid.split('|')
 		reqs.extend(f'Target.Machine != "{node}.internal.cluster.is.localnet"' for node in avoid)
-		print(f'Avoiding: {avoid}')
+		A.print(f'Avoiding: {avoid}')
 
 	if len(reqs):
 		sub.append('requirements = {}'.format(' && '.join(f'({r})' for r in reqs)))
@@ -177,7 +200,7 @@ def create_jobs(A: fig.Node):
 periodic_hold = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))
 periodic_hold_reason = "Job runtime exceeded"
 periodic_hold_subcode = 1''')
-		print(f'Will restart automatically after {time_limit} hrs')
+		A.print(f'Will restart automatically after {time_limit} hrs')
 
 	sub.append('''on_exit_hold = (ExitCode =?= 3)
 on_exit_hold_reason = "Checkpointed, will resume"
@@ -189,19 +212,17 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 	if max_running_price is not None:
 		sub.append(f"+MaxRunningPrice = {max_running_price}")
 		if running_price_exceeded_action == "kill":
-			print(f"Job will be killed if running price exceeds {max_running_price}")
+			A.print(f"Job will be killed if running price exceeds {max_running_price}")
 		elif running_price_exceeded_action == "restart":
-			print(f"Job will be restarted if running price exceeds {max_running_price}")
+			A.print(f"Job will be restarted if running price exceeds {max_running_price}")
 		else:
-			print(f"Unknown running price exceeded action {running_price_exceeded_action}")
+			A.print(f"Unknown running price exceeded action {running_price_exceeded_action}")
 			running_price_exceeded_action = "kill"
-			print(f"Job will be killed if running price exceeds {max_running_price}")
+			A.print(f"Job will be killed if running price exceeds {max_running_price}")
 		sub.append(f'+RunningPriceExceededAction = "{running_price_exceeded_action}"')
 
-	stdoutname = 'stdout-$(Process).txt'
-	stdout_path = os.path.join(path, stdoutname)
-	logname = 'log-$(Process).txt'
-	log_path = os.path.join(path, logname)
+	stdout_path = path / 'stdout-$(Process).txt'
+	log_path = path / 'log-$(Process).txt'
 
 	sub.append(SUBMISSION_FORMAT.format(exec=job_path,
 										err=stdout_path,
@@ -209,73 +230,56 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 										log=log_path,
 										procs=len(commands)))
 
-	sub_path = os.path.join(path, 'submit.sub')
-	with open(sub_path, 'w') as f:
-		f.write('\n'.join(sub))
+	sub_path = path / 'submit.sub'
+	sub_path.write_text('\n'.join(sub))
 
-	print(f'Job prepared: {name}')
+	A.print(f'Job prepared: {name}')
 
 	if len(repos):
 		git_update(repos)
 	
 	ID = None
 	if bid is None:
-		print('WARNING: job not submitted because no bid was included')
+		A.print('WARNING: job not submitted because no bid was included')
 	else:
-		
 		
 		process = subprocess.Popen(['condor_submit_bid', f'{bid}', f'{sub_path}'],
 								   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		out, err = process.communicate()
-		# print(out)
-		# print(err)
-		
 		s = out.decode()
-		
-		# print('before')
-		# f = io.StringIO()
-		# with redirect_stdout(f):
-		# 	with redirect_stderr(f):
-		# 		os.system(f'condor_submit_bid {bid} {sub_path}')
-		# 		time.sleep(1)
-		# s = f.getvalue()
-		# print('after')
 
-		# print('s', s)
 		key = 'submitted to cluster '
 		if key in s:
 			idx = s.find(key) + len(key)
-			# print(idx)
 			if len(s) > idx:
 				ID = s[idx:-2]
 
 		# print('out', ID)
 
-	manifest[name] = {
+	manifest_entry = {
+		'name': name,
 		'job-num': num,
 		'procs': len(commands),
-		'path': path,
+		'path': str(path),
 		'date': now,
 		'bid': bid,
 	}
 	if rawname is not None:
-		manifest[name]['name'] = rawname
-	
+		manifest_entry['rawname'] = rawname
 	if ID is not None:
-		manifest[name]['ID'] = ID
-	
+		manifest_entry['ID'] = ID
 	if include_cmds:
-		manifest[name]['commands'] = commands
-	
-	save_yaml(manifest, manifest_path)
-	
+		manifest_entry['commands'] = commands
+
+	with manifest_path.open('a') as f:
+		f.write(f'{manifest_entry}\n')
+
 	if update_cmds and cmd_path is not None:
-		with open(cmd_path, 'r') as f:
-			raw = f.read().split('\n')
+		cmd_lines = cmd_path.read_text().split('\n')
 
 		fixed = []
 		i = 0
-		for line in raw:
+		for line in cmd_lines:
 			if is_todo(line):
 				myid = i if ID is None else f'{ID}.{i}'
 				fixed.append(f'#{line} # {name} {myid}')
@@ -284,19 +288,12 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 				fixed.append(line)
 		fixed = '\n'.join(fixed)
 
-		with open(cmd_path, 'w') as f:
-			f.write(fixed)
+		cmd_path.write_text(fixed)
 
-	print(f'Job {name} submitted: {bid}')
+	A.print(f'Job {name} submitted: {bid}')
 		
 	return name
 
-# @fig.Script('submit', description='Submit jobs to the cluster')
-# def submit_jobs(A):
-#
-# 	name =
-#
-# 	pass
 
 
 if __name__ == '__main__':
