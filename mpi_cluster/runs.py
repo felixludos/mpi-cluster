@@ -10,7 +10,7 @@ from datetime import datetime
 import omnifig as fig
 
 
-@fig.AutoModifier('cls-run')
+# @fig.AutoModifier('cls-run')
 class OnCluster:
 
 	def __init__(self, A, silent=False):

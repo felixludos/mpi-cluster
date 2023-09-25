@@ -18,7 +18,7 @@ from .status import collect_q_cmd
 
 def process_tsv(path, cols=None, include_event=None):
 	if not path.exists():
-		print(f'WARNING: could not find {name}: {path}')
+		print(f'WARNING: could not find {path}')
 		return {}
 	
 	data = load_tsv(path)
