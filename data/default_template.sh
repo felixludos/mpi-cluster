@@ -1,6 +1,6 @@
 #!
 
-# Job Info: Name={name}, Process={process}, SubmitDate={{date}.strftime("%y%m%d-%H%M%S")}
+# Job Info: Name={name}, Process={process}, SubmitDate={date.strftime("%y%m%d-%H%M%S")}
 
 ###############
 # Header

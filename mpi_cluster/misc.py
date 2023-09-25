@@ -11,5 +11,5 @@ def package_root():
 	
 
 def default_jobdir():
-	return Path(os.environ.get('HOME', os.getcwd())) / '.cluster_jobs'
+	return Path(os.environ.get('CLUSTER_HOME', os.environ.get('HOME', os.getcwd()))) / '.cluster_jobs'
 

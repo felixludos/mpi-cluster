@@ -1,0 +1,13 @@
+
+include-cmds: yes # in manifest
+
+
+time-limit: 10
+
+bid: 50
+
+
+#gpu: 1
+ram: 48
+cpu: 4
+

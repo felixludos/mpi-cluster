@@ -41,7 +41,8 @@ def process_tsv(path, cols=None, include_event=None):
 				if dkey is None:
 					dkey = col
 			elif col == 'ID':
-				info['ID'] = raw.split('#')[-1] if '#' in raw and 'sched' in raw else raw
+				info['ID'] = raw.split('#')[1] if '#' in raw and 'sched' in raw else raw
+				info['proc_ID'] = raw.split('#')[2] if '#' in raw and 'sched' in raw else None
 			elif col == 'code':
 				try:
 					info['code'] = int(raw)
@@ -148,7 +149,7 @@ def get_status(cfg: fig.Configuration):
 	cfg.silent = silent
 	print_status = cfg.pull('print-status', True, silent=True)
 	
-	user = cfg.pull('user', 'fleeb') # maybe remove me as default
+	user = cfg.pull('user') # maybe remove me as default
 	
 	cols = cfg.pull('columns', None)
 	if cols is None:
@@ -172,7 +173,8 @@ def get_status(cfg: fig.Configuration):
 				job['active'] = True
 			else:
 				failed.append(job)
-	
+
+	rows = []
 	if not active_only or len(jobs):
 		jobdir = cfg.pull('job-dir', str(misc.default_jobdir()))
 		jobdir = Path(jobdir)
@@ -243,43 +245,38 @@ def get_status(cfg: fig.Configuration):
 			if 'status' not in jobs[ID]:
 				jobs[ID]['status'] = 'missing' if not len(info['events']) \
 												or info['events'][-1]['event'] != 'end' else 'ended'
-			
-		if print_status:
-			
-			if len(jobs):
-				
-				job = next(iter(jobs.values()))
-			
-				cols = [c for c in cols if c in job]
-				
-				try:
-					idx = cols.index('ID')
-				except ValueError:
-					idx = None
-					
-				rows = []
-				for ID in sort_jobkeys(cfg, jobs):
-					info = jobs[ID]
-					if active_only and 'active' not in info:
-						continue
-					row = [info.get(key, '--') for key in cols]
-					row = [f'{r:.3g}' if isinstance(r, float) else r for r in row]
-					
-					rows.append(row)
-				
-				if idx is not None:
-					for row in rows:
-						row[idx] = row[idx].replace('.', '֎')
-				
-				tbl = tabulate(rows, headers=cols, floatfmt='.3g').replace('֎', '.')
-				cfg.print(tbl)
-				
-			else:
-				cfg.print('No jobs running.')
-				
-	elif print_status:
-		cfg.print('No jobs running.')
-	
+
+		if len(jobs):
+			job = next(iter(jobs.values()))
+
+			cols = [c for c in cols if c in job]
+
+			try:
+				idx = cols.index('ID')
+			except ValueError:
+				idx = None
+
+			rows = []
+			for ID in sort_jobkeys(cfg, jobs):
+				info = jobs[ID]
+				if active_only and 'active' not in info:
+					continue
+				row = [info.get(key, '--') for key in cols]
+				row = [f'{r:.3g}' if isinstance(r, float) else r for r in row]
+
+				rows.append(row)
+
+			if idx is not None:
+				for row in rows:
+					row[idx] = row[idx].replace('.', '֎')
+
+	if print_status:
+		if len(rows):
+			tbl = tabulate(rows, headers=cols, floatfmt='.3g').replace('֎', '.')
+			print(tbl)
+		else:
+			print('No jobs running.')
+
 	if len(failed) and not cfg.pull('skip-failed', False):
 		cfg.print()
 		cfg.print(f'Found {len(failed)} failed entries:')

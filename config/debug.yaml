@@ -1,0 +1,12 @@
+
+#silent: yes
+
+_base: [me]
+
+_meta.script_name: status
+
+
+#_base: [jobs]
+#_meta.script_name: submit
+
+#q = fig status me --silent --only-active

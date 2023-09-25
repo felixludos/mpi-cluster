@@ -82,7 +82,7 @@ def create_jobs(cfg: fig.Configuration):
 		None
 	
 	"""
-	root = cfg.push('root', None, overwrite=False)
+	root = cfg.push_pull('root', None, overwrite=False)
 	if root is not None:
 		root = Path(root)
 	
@@ -116,7 +116,8 @@ def create_jobs(cfg: fig.Configuration):
 	update_cmds = cfg.pull('update-cmds', True)
 	include_cmds = cfg.pull('include-cmds', False)
 
-	template_path = cfg.pull('template-path', str(misc.package_root() / 'default_template.sh'), silent=True)
+	template_path = cfg.pull('template-path',
+							 str(misc.package_root() / 'data' / 'default_template.sh'), silent=True)
 	if template_path is None:
 		template = '\n{command}'
 		if working_dir is not None:
@@ -145,8 +146,11 @@ def create_jobs(cfg: fig.Configuration):
 	manifest_path = Path(manifest_path)
 
 	if cfg.pull('include-num', True):
-		with manifest_path.open('r') as f:
-			num = sum(1 for _ in f)
+		if manifest_path.exists():
+			with manifest_path.open('r') as f:
+				num = sum(1 for _ in f)
+		else:
+			num = 0
 		name = f'{name}_{str(num).zfill(3)}'
 	now = datetime.now()
 	if cfg.pull('include-date', False):
@@ -211,23 +215,14 @@ def create_jobs(cfg: fig.Configuration):
 	if len(reqs):
 		sub.append('requirements = {}'.format(' && '.join(f'({r})' for r in reqs)))
 
-	time_limit = cfg.pull('time-limit', None) # in hours
-	if time_limit is not None:
-		slimit = int(float(time_limit) * 3600)
-		sub.append(f'''MaxTime = {slimit}
-periodic_hold = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))
-periodic_hold_reason = "Job runtime exceeded"
-periodic_hold_subcode = 1''')
-		cfg.print(f'Will restart automatically after {time_limit} hrs')
-
 	sub.append('''on_exit_hold = (ExitCode =?= 3)
 on_exit_hold_reason = "Checkpointed, will resume"
 on_exit_hold_subcode = 2
 periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReasonSubCode =?= 1) || (HoldReasonSubCode =?= 2)) )''')
 
 	max_running_price = cfg.pull("max-running-price", None)
-	running_price_exceeded_action = cfg.pull("running-price-exceeded-action", "kill")
 	if max_running_price is not None:
+		running_price_exceeded_action = cfg.pull("running-price-exceeded-action", "kill")
 		sub.append(f"+MaxRunningPrice = {max_running_price}")
 		if running_price_exceeded_action == "kill":
 			cfg.print(f"Job will be killed if running price exceeds {max_running_price}")
@@ -238,6 +233,15 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 			running_price_exceeded_action = "kill"
 			cfg.print(f"Job will be killed if running price exceeds {max_running_price}")
 		sub.append(f'+RunningPriceExceededAction = "{running_price_exceeded_action}"')
+
+	time_limit = cfg.pull('time-limit', None)  # in hours
+	if time_limit is not None:
+		slimit = int(float(time_limit) * 3600)
+		sub.append(f'''MaxTime = {slimit}
+periodic_hold = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))
+periodic_hold_reason = "Job runtime exceeded"
+periodic_hold_subcode = 1''')
+		cfg.print(f'Will restart automatically after {time_limit} hrs')
 
 	stdout_path = path / 'stdout-$(Process).txt'
 	log_path = path / 'log-$(Process).txt'
@@ -309,7 +313,7 @@ periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReason
 		'job-num': num,
 		'procs': len(commands),
 		'path': str(path),
-		'date': now,
+		'date': now.strftime("%y%m%d-%H%M%S"),
 		'bid': bid,
 		'ID': ID,
 	}

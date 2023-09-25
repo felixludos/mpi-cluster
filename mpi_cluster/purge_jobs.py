@@ -14,9 +14,7 @@ from . import misc
 
 
 @fig.autoscript('purge-jobs', description='Clears the jobs directory')
-def purge_jobs(jobdir=None, skip_confirm=False):
-	if jobdir is None:
-		jobdir = misc.default_jobdir()
+def purge_jobs(jobdir=str(misc.default_jobdir()), skip_confirm=False):
 	if jobdir is not None:
 		jobdir = Path(jobdir)
 
@@ -25,12 +23,9 @@ def purge_jobs(jobdir=None, skip_confirm=False):
 		if response.lower() != 'y':
 			print('Did nothing.')
 			return 0
-	
-	if jobdir.exists():
-		return 0
-	
-	shutil.rmtree(jobdir)
-	os.mkdir(jobdir)
+
+	shutil.rmtree(str(jobdir))
+	jobdir.mkdir(parents=True, exist_ok=True)
 	
 	print(f'{jobdir} purged.')
 
