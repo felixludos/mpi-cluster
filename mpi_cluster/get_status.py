@@ -1,5 +1,6 @@
 import sys, os, shutil
-import yaml
+from pathlib import Path
+import yaml, json
 import subprocess
 import pickle
 from datetime import datetime
@@ -10,18 +11,15 @@ from omnibelt import load_json, load_tsv, recover_date, save_json, load_yaml, sa
 
 import omnifig as fig
 
-# from IPython.core.debugger import set_trace
+from . import misc
+from .status import collect_q_cmd
 
-from . import fmt_jobdir, collect_q_cmd
-# from cluster_src.cluster import COLATTRS
 
-def process_tsv(name, root, A, cols=None, include_event=None):
 
-	path = A.pull(f'{name}-path', os.path.join(root, f'{name}.tsv'))
-
-	if not os.path.isfile(path):
+def process_tsv(path, cols=None, include_event=None):
+	if not path.exists():
 		print(f'WARNING: could not find {name}: {path}')
-		return None
+		return {}
 	
 	data = load_tsv(path)
 	
@@ -76,15 +74,17 @@ def process_tsv(name, root, A, cols=None, include_event=None):
 	
 	return jobs
 
+
+
 class Failed_Exception(Exception):
 	pass
 
+
+
 def compute_durations(info, sig1='start', sig2='end', now=None):
-	
 	if 'events' not in info:
 		return
-	
-	
+
 	submit = info.get('submit', None)
 	events = info['events']
 	
@@ -125,9 +125,10 @@ def compute_durations(info, sig1='start', sig2='end', now=None):
 	if wall is not None:
 		info['duration'] = wall.total_seconds() / 3600
 
-def sort_jobkeys(A, jobs):
+
+def sort_jobkeys(cfg, jobs):
 	
-	sort_by = A.pull('sort-by', None)
+	sort_by = cfg.pull('sort-by', None)
 	
 	keys = list(jobs.keys())
 	
@@ -140,169 +141,161 @@ def sort_jobkeys(A, jobs):
 	return sorted(keys, key=lambda k: tuple(jobs[k].get(s, None) for s in sort_by))
 
 
-@fig.Script('status', description='check the status of jobs submitted to the cluster')
-def get_status(A):
+
+@fig.script('status', description='check the status of jobs submitted to the cluster')
+def get_status(cfg: fig.Configuration):
+	silent = cfg.pull('silent', False, silent=True)
+	cfg.silent = silent
+	print_status = cfg.pull('print-status', True, silent=True)
 	
-	silent = A.pull('silent', False, silent=True)
+	user = cfg.pull('user', 'fleeb') # maybe remove me as default
 	
-	print_status = A.pull('print-status', True, silent=True)
+	cols = cfg.pull('columns', None)
+	if cols is None:
+		cols = ['status', 'name', 'ID', 'host', 'start', 'duration', 'wait', 'end', 'run']
 	
-	with A.silenced(silent):
+	pkl_name = cfg.pull('pickle-status', None)
 	
-		user = A.pull('user', 'fleeb') # maybe remove me as default
+	active_only = cfg.pull('only-active', False)
+	
+	active = None if cfg.pull('no-active', False) else collect_q_cmd(user, silent=True)
+	
+	now = datetime.now()
+	
+	jobs = {}
+	failed = []
+	
+	if active is not None:
+		for job in active:
+			if 'ID' in job:
+				jobs[job['ID']] = job
+				job['active'] = True
+			else:
+				failed.append(job)
+	
+	if not active_only or len(jobs):
+		jobdir = cfg.pull('job-dir', str(misc.default_jobdir()))
+		jobdir = Path(jobdir)
+		jobdir.mkdir(exist_ok=True, parents=True)
 		
-		cols = A.pull('columns', ['status', 'name', 'ID', 'host', 'start', 'duration', 'wait', 'end', 'run'])
+		manifest_path = cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True)
+		manifest_path = Path(manifest_path)
+
+		manifest = [json.loads(line) 
+			for line in manifest_path.read_text().split('\n') if len(line)] if manifest_path.exists() else []
 		
-		pkl_name = A.pull('pickle-status', None)
-		
-		active_only = A.pull('only-active', False)
-		
-		active = None if A.pull('no-active', False) else collect_q_cmd(user, silent=True)
-		
-		now = datetime.now()
-		
-		jobs = {}
-		failed = []
-		
-		if active is not None:
-			for job in active:
-				if 'ID' in job:
-					jobs[job['ID']] = job
-					job['active'] = True
-				else:
-					failed.append(job)
-		
-		if not active_only or len(jobs):
-			
-			jobdir = fmt_jobdir(A.pull('jobdir', None))
-			
-			manifest_path = A.pull('manifest-path', os.path.join(jobdir, 'manifest.yaml'))
-			if not os.path.isfile(manifest_path):
-				save_yaml(None, manifest_path)
-			manifest = load_yaml(manifest_path)
-			if manifest is None:
-				manifest = {}
-			
-			for name, entry in manifest.items():
-				jnum = entry['ID']
-				for i, cmd in enumerate(entry.get('commands', [None]*entry['procs'])):
-					ID = f'{jnum}.{i}'
-					if ID not in jobs:
-						jobs[ID] = {'ID':ID}
-					job = jobs[ID]
-					job['name'] = name
-					if cmd is not None:
-						job['command'] = cmd
-					submit_date = entry.get('date', None)
-					if submit_date is not None:
-						job['submit'] = submit_date
-					bid = entry.get('bid', None)
-					if bid is not None:
-						job['bid'] = bid
-			
-			starts = process_tsv('starts', jobdir, A, cols=['name', 'ID', 'date', 'host'],
-			                     include_event='start')
-			if starts is None:
-				starts = {}
-			terminals = process_tsv('terminals', jobdir, A, cols=['name', 'ID', 'date', 'host', 'code'],
-			                        include_event='end')
-			if terminals is None:
-				terminals = {}
-			reg = process_tsv('registry', jobdir, A, cols=['name', 'ID', 'run'])
-			if reg is None:
-				reg = {}
-			
-			failed.extend(starts.get('failed', []))
-			if 'failed' in starts:
-				del starts['failed']
-			failed.extend(reg.get('failed', []))
-			if 'failed' in reg:
-				del reg['failed']
-			failed.extend(terminals.get('failed', []))
-			if 'failed' in terminals:
-				del terminals['failed']
-			
-			full = {}
-			
-			for ID, entries in starts.items():
-				full[ID] = {'ID':ID, 'events':entries}
-			for ID, entries in terminals.items():
-				if ID not in full:
-					full[ID] = {'ID':ID, 'events':entries}
-				else:
-					full[ID]['events'].extend(entries)
-					full[ID]['events'] = sorted(full[ID]['events'], key=lambda x: x['date'])
-			
-			for ID, info in full.items():
-				if len(info['events']):
-					info['start'] = info['events'][0]['date']
-				
-				compute_durations(info, now=now)
-				
-				
+		for entry in manifest:
+			jnum = entry['ID']
+			for i, cmd in enumerate(entry.get('commands', [None]*entry['procs'])):
+				ID = f'{jnum}.{i}'
 				if ID not in jobs:
-					jobs[ID] = info
-				else:
-					jobs[ID].update(info)
-				
-				if 'status' not in jobs[ID]:
-					jobs[ID]['status'] = 'missing' if not len(info['events']) \
-					                              or info['events'][-1]['event'] != 'end' else 'ended'
-				
-				
-			if print_status:
-				
-				if len(jobs):
-					
-					job = next(iter(jobs.values()))
-				
-					cols = [c for c in cols if c in job]
-					
-					try:
-						idx = cols.index('ID')
-					except ValueError:
-						idx = None
-						
-					
-					rows = []
-					for ID in sort_jobkeys(A, jobs):
-						info = jobs[ID]
-						if active_only and 'active' not in info:
-							continue
-						row = [info.get(key, '--') for key in cols]
-						row = [f'{r:.3g}' if isinstance(r, float) else r for r in row]
-						
-						rows.append(row)
-					
-					if idx is not None:
-						for row in rows:
-							row[idx] = row[idx].replace('.', '֎')
-					
-					tbl = tabulate(rows, headers=cols, floatfmt='.3g').replace('֎', '.')
-					print(tbl)
-					
-				else:
-					print('No jobs running.')
-					
+					jobs[ID] = {'ID':ID}
+				job = jobs[ID]
+				job['name'] = entry['name']
+				if cmd is not None:
+					job['command'] = cmd
+				submit_date = entry.get('date', None)
+				if submit_date is not None:
+					job['submit'] = submit_date
+				bid = entry.get('bid', None)
+				if bid is not None:
+					job['bid'] = bid
 		
-		elif print_status:
-			print('No jobs running.')
+		starts_path = cfg.pull('starts-path', jobdir / 'starts.tsv')
+		starts = process_tsv(starts_path, cols=['name', 'ID', 'date', 'host'], include_event='start')
+		terminals_path = cfg.pull('terminals-path', jobdir / 'terminals.tsv')
+		terminals = process_tsv(terminals_path, cols=['name', 'ID', 'date', 'host', 'code'], include_event='end')
+		registry_path = cfg.pull('registry-path', jobdir / 'registry.tsv')
+		reg = process_tsv(registry_path, cols=['name', 'ID', 'info'])
 		
-		if len(failed) and not A.pull('skip-failed', False):
-			print()
-			print(f'Found {len(failed)} failed entries:')
-			for f in failed:
-				print(f)
-			print()
+		failed.extend(starts.get('failed', []))
+		if 'failed' in starts:
+			del starts['failed']
+		failed.extend(reg.get('failed', []))
+		if 'failed' in reg:
+			del reg['failed']
+		failed.extend(terminals.get('failed', []))
+		if 'failed' in terminals:
+			del terminals['failed']
+		
+		full = {}
+		
+		for ID, entries in starts.items():
+			full[ID] = {'ID':ID, 'events':entries}
+		for ID, entries in terminals.items():
+			if ID not in full:
+				full[ID] = {'ID':ID, 'events':entries}
+			else:
+				full[ID]['events'].extend(entries)
+				full[ID]['events'] = sorted(full[ID]['events'], key=lambda x: x['date'])
+		
+		for ID, info in full.items():
+			if len(info['events']):
+				info['start'] = info['events'][0]['date']
+			
+			compute_durations(info, now=now)
+			
+			if ID not in jobs:
+				jobs[ID] = info
+			else:
+				jobs[ID].update(info)
+			
+			if 'status' not in jobs[ID]:
+				jobs[ID]['status'] = 'missing' if not len(info['events']) \
+												or info['events'][-1]['event'] != 'end' else 'ended'
+			
+		if print_status:
+			
+			if len(jobs):
+				
+				job = next(iter(jobs.values()))
+			
+				cols = [c for c in cols if c in job]
+				
+				try:
+					idx = cols.index('ID')
+				except ValueError:
+					idx = None
+					
+				rows = []
+				for ID in sort_jobkeys(cfg, jobs):
+					info = jobs[ID]
+					if active_only and 'active' not in info:
+						continue
+					row = [info.get(key, '--') for key in cols]
+					row = [f'{r:.3g}' if isinstance(r, float) else r for r in row]
+					
+					rows.append(row)
+				
+				if idx is not None:
+					for row in rows:
+						row[idx] = row[idx].replace('.', '֎')
+				
+				tbl = tabulate(rows, headers=cols, floatfmt='.3g').replace('֎', '.')
+				cfg.print(tbl)
+				
+			else:
+				cfg.print('No jobs running.')
+				
+	elif print_status:
+		cfg.print('No jobs running.')
 	
-		if pkl_name is not None:
-			if '.p' not in pkl_name:
-				pkl_name = f'{pkl_name}.p'
-			with open(pkl_name, 'w') as f:
-				pickle.dump({'jobs':jobs, 'failed':failed}, f)
-			print(f'Pickled status to: {pkl_name}')
+	if len(failed) and not cfg.pull('skip-failed', False):
+		cfg.print()
+		cfg.print(f'Found {len(failed)} failed entries:')
+		for f in failed:
+			cfg.print(f)
+		cfg.print()
+
+	if pkl_name is not None:
+		if '.p' not in pkl_name:
+			pkl_name = f'{pkl_name}.p'
+		with open(pkl_name, 'w') as f:
+			pickle.dump({'jobs':jobs, 'failed':failed}, f)
+		cfg.print(f'Pickled status to: {pkl_name}')
 	
 	return jobs
+
 
 
 if __name__ == '__main__':

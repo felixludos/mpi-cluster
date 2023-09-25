@@ -6,33 +6,10 @@ import omnibelt as util
 import omnifig as fig
 
 
-
-def is_todo(line):
-	line = line.strip()
-	return len(line) > 0 and line[0] != '#'
-
-
-
-# def write_job(cmds: List[str], path: Path, cddir=None, tmpl=None):
-#
-# 	if tmpl is None:
-# 		tmpl = '#!\n{header}\n{job}\n{tail}'
-#
-# 	if cddir is not None:
-# 		tmpl = tmpl.replace('# <header>', f'cd {cddir}')
-#
-# 	if isinstance(cmds, (list, tuple)):
-# 		cmds = '\n'.join(cmds)
-#
-# 	tmpl = tmpl.replace('<job>', cmds)
-#
-# 	path.write_text(tmpl)
-
-
+def package_root():
+	return Path(__file__).parent.parent
+	
 
 def default_jobdir():
-	jobdir = Path(os.environ.get('HOME', os.getcwd())) / '.mpi_jobs'
-	if not jobdir.exists():
-		jobdir.mkdir()
-	return jobdir
+	return Path(os.environ.get('HOME', os.getcwd())) / '.cluster_jobs'
 
