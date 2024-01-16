@@ -1,0 +1,23 @@
+
+_base: [me, jobs, repos]
+
+
+command-path: /home/fleeb/todo.sh
+update-cmds: true
+include-cmds: true # in manifest
+
+template-path: /home/fleeb/workspace/code/mpi-cluster/data/template.sh
+
+#working-dir: /home/fleeb/workspace/code/ideas
+working-dir: /home/fleeb/workspace/code/cladder
+
+
+array: true
+
+gpu: 1
+ram: 48
+cpu: 4
+
+time-limit: 10
+
+bid: 50
