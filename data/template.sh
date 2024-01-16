@@ -1,6 +1,7 @@
 
 #source /home/fleeb/.bashrc
 
+export HF_HOME="/is/ei/fleeb/.cache/huggingface/"
 export OMNILEARN_SAVE_DIR="/home/fleeb/trained_nets/"
 export OMNILEARN_DATA_DIR="/home/fleeb/local_data/"
 
