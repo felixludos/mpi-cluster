@@ -107,6 +107,7 @@ def create_jobs(cfg: fig.Configuration):
 			commands = []
 			with cmd_path.open('r') as f:
 				for line in f.readlines():
+					line = line.strip()
 					if len(line) and line[0] != '#':
 						commands.append(line)
 
