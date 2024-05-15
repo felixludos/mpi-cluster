@@ -183,6 +183,11 @@ def create_jobs(cfg: fig.Configuration):
 	gpu = cfg.pull('gpu', 0)
 	if gpu > 0:
 		sub.append(f'request_gpus = {gpu}')
+
+		gpu_mem = cfg.pulls('gpu-mem', 'gpu-ram', 'gpu-memory', default=None)
+		if gpu_mem is not None:
+			reqs.append(f'CUDAGlobalMemoryMb >= {gpu_mem*1024}')
+
 		gpu_names = cfg.pulls('gpu-names', 'gpu-name', default=None)
 		if gpu_names is not None:
 			if isinstance(gpu_names, dict):
