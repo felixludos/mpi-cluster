@@ -1,3 +1,4 @@
+from typing import Union
 import sys, os
 from pathlib import Path
 import time
@@ -40,7 +41,7 @@ def git_update(git_repos=None):
 
 
 @fig.script('submit', description='Submit jobs to the cluster')
-def create_jobs(cfg: fig.Configuration):
+def create_jobs(cfg: fig.Configuration, *, commands: Union[list[str], str] = None):
 	"""
 	Create and submit jobs based on the given configuration.
 
@@ -58,6 +59,7 @@ def create_jobs(cfg: fig.Configuration):
 			- header (str): The header for the job file. Default is 'cd {working_dir}'.
 			- tail (str): The tail for the job file. Default is an empty string.
 			- name (str): The name of the job. Default is an empty string.
+			- env-vars (dict[str, str]): A dictionary of environment variables to include. Default is an empty dictionary.
 			- job-dir (str): The directory to store the job files. Default is the result of calling `default_jobdir()`.
 			- manifest-path (str): The path to the manifest file. Default is None.
 			- include-num (bool): Whether to include the job number in the name. Default is False.
@@ -90,7 +92,8 @@ def create_jobs(cfg: fig.Configuration):
 	if working_dir is not None:
 		working_dir = Path(working_dir).resolve()
 
-	commands = cfg.pulls('commands', 'command', default=None)
+	if commands is None:
+		commands = cfg.pulls('commands', 'command', default=None)
 	if isinstance(commands, str):
 		commands = [commands]
 	
@@ -170,8 +173,21 @@ def create_jobs(cfg: fig.Configuration):
 	sub = []
 	
 	job_path = path / 'job-$(Process).sh'
-	sub.append(f'environment = JOBDIR={path};JOBEXEC={job_path};PROCESS_ID=$(Process);'
-			   f'JOB_ID=$(ID);JOB_NAME={name};JOB_NUM={num}')
+
+	env_vars = cfg.pull('env-vars', {})
+
+	base_env = {
+		'JOBDIR': path,
+		'JOBEXEC': job_path,
+		'PROCESS_ID': '$(Process)',
+		'JOB_ID': '$(ID)',
+		'JOB_NAME': name,
+		'JOB_NUM': num,
+	}
+	if env_vars is not None:
+		base_env.update(env_vars)
+	evars = ';'.join(f'{k}={v}' for k, v in base_env.items())
+	sub.append(f'environment = {evars}')
 
 	reqs = []
 
