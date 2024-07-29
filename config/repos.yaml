@@ -15,4 +15,5 @@ git_repos:
 #  - /home/fleeb/workspace/code/cladder
   - /home/fleeb/workspace/code/data-foundation
   - /home/fleeb/workspace/code/llm-evaluation
+  - /home/fleeb/workspace/code/alphageometry
 

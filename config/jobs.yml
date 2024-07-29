@@ -11,3 +11,4 @@ bid: 50
 ram: 48
 cpu: 4
 
+working-dir: /home/fleeb/workspace/code/alphageometry
