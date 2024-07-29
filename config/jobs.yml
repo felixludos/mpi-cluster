@@ -11,4 +11,6 @@ bid: 50
 ram: 48
 cpu: 4
 
+command-path: /home/fleeb/todo.sh
+template-path: /home/fleeb/workspace/code/mpi-cluster/data/template.sh
 working-dir: /home/fleeb/workspace/code/alphageometry
