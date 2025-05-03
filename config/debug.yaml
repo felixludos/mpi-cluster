@@ -5,8 +5,12 @@ _base: [me]
 
 _meta.script_name: status
 
+remote-host: login.cluster.is.localnet
 
 #_base: [jobs]
 #_meta.script_name: submit
 
 #q = fig status me --silent --only-active
+
+
+

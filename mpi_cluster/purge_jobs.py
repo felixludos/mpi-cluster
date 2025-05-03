@@ -13,7 +13,7 @@ from . import misc
 
 
 
-@fig.autoscript('purge-jobs', description='Clears the jobs directory')
+# @fig.autoscript('purge-jobs', description='Clears the jobs directory')
 def purge_jobs(jobdir=str(misc.default_jobdir()), skip_confirm=False):
 	if jobdir is not None:
 		jobdir = Path(jobdir)

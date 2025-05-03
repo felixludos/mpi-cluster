@@ -51,7 +51,7 @@ def parse_job_status(raw):
 	return info
 
 
-def collect_q_cmd(user, silent=False):
+def collect_q_cmd(user, silent=False, host=None):
 	if not silent:
 		print('Getting job status ... ', end='')
 	
