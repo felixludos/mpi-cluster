@@ -1,3 +1,5 @@
+import sys
+
 from .imports import *
 from .status import collect_q_cmd
 
@@ -14,18 +16,18 @@ def generic_run(cfg: fig.Configuration):
 	Returns:
 		None
 	"""
+	print(sys.argv)
 
 	output_prefix = cfg.pull('output-prefix', '__output_tag_code__')
 
 	command = cfg.pull('command', None)
 	# print(command)
 
-	print('command', repr(command))
 	# command = json.loads(command)
 	if isinstance(command, str):
 		command = shlex.split(command)
 
-	print('command-shell', repr(command))
+	print('command', repr(command))
 	result = subprocess.run(command, capture_output=True, text=True)
 
 	raw = result.stdout
