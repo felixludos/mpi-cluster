@@ -39,12 +39,14 @@ def run_command(command, location=None, output_prefix=')@(') -> str:
 		return raw
 
 	command_data = json.dumps(command)
-	run_command = ['fig _generic_run',
+	run_command_lines = ['fig _generic_run',
 				   f'--output-prefix {output_prefix}',
 				   f'--command {command_data}']
+	cmd = ' '.join(run_command_lines)
 
 	# location = f'{user}@{host}'
-	ssh_command = ['ssh', location, f'bash -ic "{' '.join(run_command)}"']
+
+	ssh_command = ['ssh', location, f'bash -ic "{cmd}"']
 
 	try:
 		raw = subprocess.check_output(ssh_command).decode()
