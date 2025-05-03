@@ -20,10 +20,12 @@ def generic_run(cfg: fig.Configuration):
 	command = cfg.pull('command', None)
 	# print(command)
 
+	print('command', repr(command))
 	# command = json.loads(command)
 	if isinstance(command, str):
 		command = shlex.split(command)
 
+	print('command-shell', repr(command))
 	result = subprocess.run(command, capture_output=True, text=True)
 
 	raw = result.stdout
