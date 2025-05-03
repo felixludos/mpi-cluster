@@ -27,7 +27,7 @@ def generic_run(cfg: fig.Configuration):
 	result = subprocess.run(command, capture_output=True, text=True)
 
 	raw = result.stdout
-	# print(raw)
+	print('generic-raw', repr(raw))
 
 	output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
 	print(output)
@@ -74,7 +74,7 @@ def run_command(command, location=None, output_prefix='__output_tag_code__') -> 
 
 	raw = result.stdout
 
-	print(raw)
+	print('raw', repr(raw))
 
 	output = []
 	for line in raw.split('\n'):
