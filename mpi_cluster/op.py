@@ -2,7 +2,7 @@ import sys
 
 from .imports import *
 from . import misc
-from .status import parse_job_status, process_tsv, compute_durations, sort_jobkeys
+from .status import parse_job_status, compute_durations, sort_jobkeys
 
 
 @fig.script('_generic_run', description='run a command specified from a remote client')
@@ -56,6 +56,88 @@ def run_command(command: str, location: str = None, *, output_prefix: str = '__o
 	return '\n'.join(output)
 
 
+_file_cache = misc.repo_root().joinpath('assets', 'file_cache.json')
+def load_file(path: Path, location: str = None) -> str:
+	text = None
+	cache = None
+	pathcode = str(path).replace('\\', '/')
+	if _file_cache is not None:
+		cache = load_json(_file_cache)
+		if pathcode.replace('\\', '/') in cache:
+			return cache[pathcode]
+	if location is None:
+		if path.exists():
+			text = path.read_text()
+	else:
+		command = f'cat {path}'.replace('\\', '/')
+		text = run_command(command, location=location)
+
+	if text is None:
+		raise FileNotFoundError(f'File not found: {path}')
+	if cache is not None:
+		cache[pathcode] = text
+		with open(_file_cache, 'w') as f:
+			json.dump(cache, f)
+	return text
+
+
+
+def process_data_table(file_text: str, cols=None, include_event=None):
+
+	data = pd.read_csv(io.StringIO(file_text), sep='\t', header=None)
+
+	# data = [{k: v for k, v in zip(cols or range(len(row)), row)} for row in data.itertuples(index=False)]
+
+	if cols is None:
+		return data
+
+	dkey = None
+
+	full = []
+	for row in data.itertuples(index=False):
+		info = {}
+		for col, raw in zip(cols, row):
+
+			if 'date' in col:
+				info['date'] = recover_date(raw)
+				if dkey is None:
+					dkey = col
+			elif col == 'ID':
+				info['ID'] = raw.split('#')[1] if '#' in raw and 'sched' in raw else raw
+				info['proc_ID'] = raw.split('#')[2] if '#' in raw and 'sched' in raw else None
+			elif col == 'code':
+				try:
+					info['code'] = int(raw)
+				except TypeError:
+					print(f'failed to parse: {raw}')
+					info['code'] = raw
+			else:
+				info[col] = raw
+
+		if include_event is not None:
+			info['event'] = include_event
+
+		full.append(info)
+
+	if 'ID' not in cols:
+		return full
+
+	jobs = {}
+
+	for info in full:
+		ID = info.get('ID', 'failed')
+		if ID not in jobs:
+			jobs[ID] = []
+		jobs[ID].append(info)
+
+	if dkey is not None:
+
+		for ID, seq in jobs.items():
+			jobs[ID] = sorted(seq, key=lambda x: x[dkey])
+
+	return jobs
+
+
 
 @fig.script('status', description='check the status of jobs submitted to the cluster')
 def get_status(cfg: fig.Configuration):
@@ -69,7 +151,7 @@ def get_status(cfg: fig.Configuration):
 		None
 	"""
 	print_status = cfg.pull('print-status', True, silent=True)
-	silent = cfg.pull('silent', not show, silent=True)
+	silent = cfg.pull('silent', False, silent=True)
 	cfg.silent = silent
 
 	host = cfg.pull('remote-host', None)
@@ -112,13 +194,16 @@ def get_status(cfg: fig.Configuration):
 	if not active_only or len(jobs):
 		jobdir = cfg.pull('job-dir', str(misc.default_jobdir()))
 		jobdir = Path(jobdir)
-		jobdir.mkdir(exist_ok=True, parents=True)
+		if location is None:
+			jobdir.mkdir(exist_ok=True, parents=True)
 
 		manifest_path = cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True)
 		manifest_path = Path(manifest_path)
 
-		manifest = [json.loads(line)
-					for line in manifest_path.read_text().split('\n') if len(line)] if manifest_path.exists() else []
+		manifest_text = load_file(manifest_path, location=location)
+
+		manifest = [json.loads(line) for line in manifest_text.split('\n') if len(line)] \
+			if manifest_text is not None and len(manifest_text) else []
 
 		for entry in manifest:
 			jnum = entry['ID']
@@ -138,18 +223,23 @@ def get_status(cfg: fig.Configuration):
 					job['bid'] = bid
 
 		starts_path = cfg.pull('starts-path', jobdir / 'starts.tsv')
-		starts = process_tsv(starts_path, cols=['name', 'ID', 'date', 'host'], include_event='start')
+		starts_text = load_file(starts_path, location=location)
+		starts = process_data_table(starts_text, cols=['name', 'ID', 'date', 'host'], include_event='start')
+
 		terminals_path = cfg.pull('terminals-path', jobdir / 'terminals.tsv')
-		terminals = process_tsv(terminals_path, cols=['name', 'ID', 'date', 'host', 'code'], include_event='end')
-		registry_path = cfg.pull('registry-path', jobdir / 'registry.tsv')
-		reg = process_tsv(registry_path, cols=['name', 'ID', 'info'])
+		terminals_text = load_file(terminals_path, location=location)
+		terminals = process_data_table(terminals_text, cols=['name', 'ID', 'date', 'host', 'code'], include_event='end')
+
+		# registry_path = cfg.pull('registry-path', jobdir / 'registry.tsv')
+		# registry_text = load_file(registry_path, location=location)
+		# reg = process_data_table(registry_text, cols=['name', 'ID', 'info'])
 
 		failed.extend(starts.get('failed', []))
 		if 'failed' in starts:
 			del starts['failed']
-		failed.extend(reg.get('failed', []))
-		if 'failed' in reg:
-			del reg['failed']
+		# failed.extend(reg.get('failed', []))
+		# if 'failed' in reg:
+		# 	del reg['failed']
 		failed.extend(terminals.get('failed', []))
 		if 'failed' in terminals:
 			del terminals['failed']

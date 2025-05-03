@@ -5,8 +5,17 @@
 
 _meta.script_name: status
 
-remote-host: login.cluster.is.localnet
+_base: [remote]
+
 user: fleeb
+
+
+active-only: yes
+
+silent: yes
+
+no-active: yes
+
 
 #_base: [jobs]
 #_meta.script_name: submit

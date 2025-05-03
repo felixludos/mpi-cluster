@@ -7,7 +7,7 @@ import omnifig as fig
 
 
 def repo_root():
-	return Path(__file__).parent.parent.parent
+	return Path(__file__).parent.parent
 
 def package_root():
 	return repo_root() / 'mpi_cluster'
