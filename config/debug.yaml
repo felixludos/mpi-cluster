@@ -1,11 +1,12 @@
 
 #silent: yes
 
-_base: [me]
+#_base: [me]
 
 _meta.script_name: status
 
 remote-host: login.cluster.is.localnet
+user: fleeb
 
 #_base: [jobs]
 #_meta.script_name: submit

@@ -18,7 +18,7 @@ def generic_run(cfg: fig.Configuration):
 	output_prefix = cfg.pull('output-prefix', ')@(')
 
 	command = cfg.pull('command', None)
-	command = json.loads(command)
+	# command = json.loads(command)
 	if isinstance(command, str):
 		command = [command]
 
@@ -38,15 +38,18 @@ def run_command(command, location=None, output_prefix=')@(') -> str:
 		raw = subprocess.check_output(command).decode()
 		return raw
 
-	command_data = json.dumps(command)
+	# command_data = json.dumps(command)
+	command_data = ' '.join(command)
 	run_command_lines = ['fig _generic_run',
-				   f'--output-prefix {output_prefix}',
-				   f'--command {command_data}']
+				   f'--output-prefix {output_prefix!r}',
+				   f'--command {command_data!r}']
 	cmd = ' '.join(run_command_lines)
 
 	# location = f'{user}@{host}'
 
-	ssh_command = ['ssh', location, f'bash -ic "{cmd}"']
+	ssh_command = ['ssh', location, f'bash -ic {cmd!r}']
+
+	print(' '.join(ssh_command))
 
 	try:
 		raw = subprocess.check_output(ssh_command).decode()
