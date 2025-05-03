@@ -27,9 +27,8 @@ def generic_run(cfg: fig.Configuration):
 	except FileNotFoundError:
 		return None
 
-	if len(raw):
-		output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
-		print(output)
+	output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
+	print(output)
 
 
 
