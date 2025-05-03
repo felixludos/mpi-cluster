@@ -15,17 +15,16 @@ def generic_run(cfg: fig.Configuration):
 		None
 	"""
 
-	output_prefix = cfg.pull('output-prefix', '[output-tag-code]')
+	output_prefix = cfg.pull('output-prefix', '__output-tag-code__')
 
 	command = cfg.pull('command', None)
+	print(command)
+	
 	# command = json.loads(command)
 	if isinstance(command, str):
 		command = [command]
 
-	try:
-		result = subprocess.run(command, capture_output=True, text=True)
-	except FileNotFoundError:
-		return None
+	result = subprocess.run(command, capture_output=True, text=True)
 
 	raw = result.stdout
 	print(raw)
@@ -35,7 +34,7 @@ def generic_run(cfg: fig.Configuration):
 
 
 
-def run_command(command, location=None, output_prefix='&^&') -> str:
+def run_command(command, location=None, output_prefix='__output-tag-code__') -> str:
 	if location is None:
 		raw = subprocess.check_output(command, shell=True).decode()
 		return raw
