@@ -1,8 +1,8 @@
 import sys
 
 from .imports import *
-from .status import collect_q_cmd
-
+from . import misc
+from .status import parse_job_status, process_tsv, compute_durations, sort_jobkeys
 
 
 @fig.script('_generic_run', description='run a command specified from a remote client')
@@ -16,69 +16,37 @@ def generic_run(cfg: fig.Configuration):
 	Returns:
 		None
 	"""
-	print(sys.argv)
-
 	output_prefix = cfg.pull('output-prefix', '__output_tag_code__')
-
 	command = cfg.pull('command', None)
-	# print(command)
-
-	# command = json.loads(command)
-	if isinstance(command, str):
-		command = shlex.split(command)
-
-	print('command', repr(command))
-	result = subprocess.run(command, capture_output=True, text=True)
-
+	result = subprocess.run(command, shell=True, capture_output=True, text=True)
 	raw = result.stdout
-	print('generic-raw', repr(raw))
-
 	output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
 	print(output)
 
 
 
-def run_command(command, location=None, output_prefix='__output_tag_code__') -> str:
+def run_command(command: str, location: str = None, *, output_prefix: str = '__output_tag_code__') -> str:
 	if location is None:
-		raw = subprocess.check_output(command, shell=True).decode()
-		return raw
+		res = subprocess.run(
+			command,
+			shell=True,
+			capture_output=True,
+			text=True,
+		)
+		return res.stdout
 
-	# gold = [
-	# 		"ssh",
-	# 		"fleeb@login.cluster.is.localnet",
-	# 		'bash -ic "fig _generic_run --output-prefix \\\"@~@\\\" --command \\\"condor_q fleeb -af:t ClusterId ProcId JobStatus Args RemoteHost\\\""'
-	# 	]
-	# gold = ' '.join(gold)
-	# print(gold)
+	c = command.replace('\\', '\\\\').replace('"', '\\"')
+	r = f"fig _generic_run --output-prefix \"{output_prefix}\" --command \"{c}\"".replace('\\', '\\\\').replace('"', '\\"')
+	b = f"bash -ic \"{r}\""
+	full = f"ssh {location} '{b}'"
 
-
-	# output_prefix = f'"{output_prefix}"'.replace('\\', '\\\\').replace('"', '\\"')
-
-	print(' '.join(command))
-	command_data = ' '.join(command).replace('"', '\\"')
-	run_command_lines = ['fig _generic_run',
-				   rf'--output-prefix "{output_prefix}"',
-				   rf'--command "{command_data}"']
-
-	print(' '.join(run_command_lines))
-	cmd = ' '.join(run_command_lines).replace('"', '\\"')
-
-	# location = f'{user}@{host}'
-
-
-	ssh_command = ['ssh', location, f"bash -ic \"{cmd}\""]
-
-	print(' '.join(ssh_command))
-
-	try:
-		# raw = subprocess.check_output(ssh_command, shell=True).decode()
-		result = subprocess.run(ssh_command, capture_output=True, text=True)
-	except FileNotFoundError:
-		return None
-
-	raw = result.stdout
-
-	print('raw', repr(raw))
+	res = subprocess.run(
+		full,
+		shell=True,
+		capture_output=True,
+		text=True,
+	)
+	raw = res.stdout
 
 	output = []
 	for line in raw.split('\n'):
@@ -100,54 +68,164 @@ def get_status(cfg: fig.Configuration):
 	Returns:
 		None
 	"""
-
-	# result = subprocess.run(
-	# 	[
-	# 		"ssh",
-	# 		"fleeb@login.cluster.is.localnet",
-	# 		'bash -ic "fig _generic_run --output-prefix \\\"@~@\\\" --command \\\"condor_q fleeb -af:t ClusterId ProcId JobStatus Args RemoteHost\\\""'
-	# 	],
-	# 	capture_output=True,
-	# 	text=True  # auto-decodes to string using system default encoding (usually UTF-8)
-	# )
-
-	# # print("STDOUT:\n", result.stdout)
-	# # print("STDERR:\n", result.stderr)
-	# out = result.stdout
-	# print(out)
-	# print(repr(out))
-	# return
-
-	user = 'fleeb'
-	location = "fleeb@login.cluster.is.localnet"
-
-	q_command = ['condor_q', user, '-af:t'] + ['ClusterId', 'ProcId', 'JobStatus', 'Args', 'RemoteHost']
-	q_command = ['echo', '"Hello"']
-
-	output = run_command(q_command, location=location)
-
-	print(output)
-
-	return output
+	print_status = cfg.pull('print-status', True, silent=True)
+	silent = cfg.pull('silent', not show, silent=True)
+	cfg.silent = silent
 
 	host = cfg.pull('remote-host', None)
 	user = cfg.pull('user')
+	location = None if host is None else f'{user}@{host}'
 
-	if host is None:
-		location = None
-	else:
-		assert user is not None
-		location = f'{user}@{host}'
+	cols = cfg.pull('columns', ['status', 'name', 'ID', 'host', 'start', 'duration', 'wait', 'end', 'run'])
 
-	q_command = ['condor_q', user, '-af:t'] + ['ClusterId', 'ProcId', 'JobStatus', 'Args', 'RemoteHost']
+	pkl_name = cfg.pull('pickle-status', None)
 
-	output = run_command(q_command, location=location)
+	active_only = cfg.pull('only-active', False)
 
-	print(output)
+	active = None
+	if not cfg.pull('no-active', False):
 
+		q_status_columns = ['ClusterId', 'ProcId', 'JobStatus', 'Args', 'RemoteHost']
+		q_command = ['condor_q', user, '-af:t'] + q_status_columns
+		q_command = ' '.join(q_command)
+		# q_command = 'echo "Hello world"'
 
+		raw = run_command(q_command, location=location).strip()
 
+		lines = raw.split('\n')
+		active = [parse_job_status(dict(zip(q_status_columns, line.split('\t')))) for line in lines if len(line)]
 
+	now = datetime.now()
+
+	jobs = {}
+	failed = []
+
+	if active is not None:
+		for job in active:
+			if 'ID' in job:
+				jobs[job['ID']] = job
+				job['active'] = True
+			else:
+				failed.append(job)
+
+	rows = []
+	if not active_only or len(jobs):
+		jobdir = cfg.pull('job-dir', str(misc.default_jobdir()))
+		jobdir = Path(jobdir)
+		jobdir.mkdir(exist_ok=True, parents=True)
+
+		manifest_path = cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True)
+		manifest_path = Path(manifest_path)
+
+		manifest = [json.loads(line)
+					for line in manifest_path.read_text().split('\n') if len(line)] if manifest_path.exists() else []
+
+		for entry in manifest:
+			jnum = entry['ID']
+			for i, cmd in enumerate(entry.get('commands', [None] * entry['procs'])):
+				ID = f'{jnum}.{i}'
+				if ID not in jobs:
+					jobs[ID] = {'ID': ID}
+				job = jobs[ID]
+				job['name'] = entry['name']
+				if cmd is not None:
+					job['command'] = cmd
+				submit_date = entry.get('date', None)
+				if submit_date is not None:
+					job['submit'] = submit_date
+				bid = entry.get('bid', None)
+				if bid is not None:
+					job['bid'] = bid
+
+		starts_path = cfg.pull('starts-path', jobdir / 'starts.tsv')
+		starts = process_tsv(starts_path, cols=['name', 'ID', 'date', 'host'], include_event='start')
+		terminals_path = cfg.pull('terminals-path', jobdir / 'terminals.tsv')
+		terminals = process_tsv(terminals_path, cols=['name', 'ID', 'date', 'host', 'code'], include_event='end')
+		registry_path = cfg.pull('registry-path', jobdir / 'registry.tsv')
+		reg = process_tsv(registry_path, cols=['name', 'ID', 'info'])
+
+		failed.extend(starts.get('failed', []))
+		if 'failed' in starts:
+			del starts['failed']
+		failed.extend(reg.get('failed', []))
+		if 'failed' in reg:
+			del reg['failed']
+		failed.extend(terminals.get('failed', []))
+		if 'failed' in terminals:
+			del terminals['failed']
+
+		full = {}
+
+		for ID, entries in starts.items():
+			full[ID] = {'ID': ID, 'events': entries}
+		for ID, entries in terminals.items():
+			if ID not in full:
+				full[ID] = {'ID': ID, 'events': entries}
+			else:
+				full[ID]['events'].extend(entries)
+				full[ID]['events'] = sorted(full[ID]['events'], key=lambda x: x['date'])
+
+		for ID, info in full.items():
+			if len(info['events']):
+				info['start'] = info['events'][0]['date']
+
+			compute_durations(info, now=now)
+
+			if ID not in jobs:
+				jobs[ID] = info
+			else:
+				jobs[ID].update(info)
+
+			if 'status' not in jobs[ID]:
+				jobs[ID]['status'] = 'missing' if not len(info['events']) \
+												  or info['events'][-1]['event'] != 'end' else 'ended'
+
+		if len(jobs):
+			job = next(iter(jobs.values()))
+
+			cols = [c for c in cols if c in job]
+
+			try:
+				idx = cols.index('ID')
+			except ValueError:
+				idx = None
+
+			rows = []
+			for ID in sort_jobkeys(cfg, jobs):
+				info = jobs[ID]
+				if active_only and 'active' not in info:
+					continue
+				row = [info.get(key, '--') for key in cols]
+				row = [f'{r:.3g}' if isinstance(r, float) else r for r in row]
+
+				rows.append(row)
+
+			if idx is not None:
+				for row in rows:
+					row[idx] = row[idx].replace('.', '֎')
+
+	if print_status:
+		if len(rows):
+			tbl = tabulate(rows, headers=cols, floatfmt='.3g').replace('֎', '.')
+			print(tbl)
+		else:
+			print('No jobs running.')
+
+	if len(failed) and not cfg.pull('skip-failed', False):
+		cfg.print()
+		cfg.print(f'Found {len(failed)} failed entries:')
+		for f in failed:
+			cfg.print(f)
+		cfg.print()
+
+	if pkl_name is not None:
+		if '.p' not in pkl_name:
+			pkl_name = f'{pkl_name}.p'
+		with open(pkl_name, 'w') as f:
+			pickle.dump({'jobs': jobs, 'failed': failed}, f)
+		cfg.print(f'Pickled status to: {pkl_name}')
+
+	return active
 
 
 
