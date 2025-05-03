@@ -15,7 +15,7 @@ def generic_run(cfg: fig.Configuration):
 		None
 	"""
 
-	output_prefix = cfg.pull('output-prefix', ')@(')
+	output_prefix = cfg.pull('output-prefix', '[output-tag-code]')
 
 	command = cfg.pull('command', None)
 	# command = json.loads(command)
@@ -23,37 +23,59 @@ def generic_run(cfg: fig.Configuration):
 		command = [command]
 
 	try:
-		raw = subprocess.check_output(command).decode()
+		result = subprocess.run(command, capture_output=True, text=True)
 	except FileNotFoundError:
 		return None
+
+	raw = result.stdout
+	print(raw)
 
 	output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
 	print(output)
 
 
 
-def run_command(command, location=None, output_prefix=')@(') -> str:
+def run_command(command, location=None, output_prefix='&^&') -> str:
 	if location is None:
-		raw = subprocess.check_output(command).decode()
+		raw = subprocess.check_output(command, shell=True).decode()
 		return raw
 
-	# command_data = json.dumps(command)
-	command_data = ' '.join(command)
+	# gold = [
+	# 		"ssh",
+	# 		"fleeb@login.cluster.is.localnet",
+	# 		'bash -ic "fig _generic_run --output-prefix \\\"@~@\\\" --command \\\"condor_q fleeb -af:t ClusterId ProcId JobStatus Args RemoteHost\\\""'
+	# 	]
+	# gold = ' '.join(gold)
+	# print(gold)
+
+
+	# output_prefix = f'"{output_prefix}"'.replace('\\', '\\\\').replace('"', '\\"')
+
+	print(' '.join(command))
+	command_data = ' '.join(command).replace('"', '\\"')
 	run_command_lines = ['fig _generic_run',
-				   f'--output-prefix {output_prefix!r}',
-				   f'--command {command_data!r}']
-	cmd = ' '.join(run_command_lines)
+				   rf'--output-prefix "{output_prefix}"',
+				   rf'--command "{command_data}"']
+
+	print(' '.join(run_command_lines))
+	cmd = ' '.join(run_command_lines).replace('"', '\\"')
 
 	# location = f'{user}@{host}'
 
-	ssh_command = ['ssh', location, f'bash -ic {cmd!r}']
+
+	ssh_command = ['ssh', location, f"bash -ic \"{cmd}\""]
 
 	print(' '.join(ssh_command))
 
 	try:
-		raw = subprocess.check_output(ssh_command).decode()
+		# raw = subprocess.check_output(ssh_command, shell=True).decode()
+		result = subprocess.run(ssh_command, capture_output=True, text=True)
 	except FileNotFoundError:
 		return None
+
+	raw = result.stdout
+
+	print(raw)
 
 	output = []
 	for line in raw.split('\n'):
@@ -75,6 +97,33 @@ def get_status(cfg: fig.Configuration):
 	Returns:
 		None
 	"""
+
+	# result = subprocess.run(
+	# 	[
+	# 		"ssh",
+	# 		"fleeb@login.cluster.is.localnet",
+	# 		'bash -ic "fig _generic_run --output-prefix \\\"@~@\\\" --command \\\"condor_q fleeb -af:t ClusterId ProcId JobStatus Args RemoteHost\\\""'
+	# 	],
+	# 	capture_output=True,
+	# 	text=True  # auto-decodes to string using system default encoding (usually UTF-8)
+	# )
+
+	# # print("STDOUT:\n", result.stdout)
+	# # print("STDERR:\n", result.stderr)
+	# out = result.stdout
+	# print(out)
+	# print(repr(out))
+	# return
+
+	user = 'fleeb'
+	location = "fleeb@login.cluster.is.localnet"
+
+	q_command = ['condor_q', user, '-af:t'] + ['ClusterId', 'ProcId', 'JobStatus', 'Args', 'RemoteHost']
+	q_command = ['echo', '"Hello"']
+
+	output = run_command(q_command, location=location)
+
+	return output
 
 	host = cfg.pull('remote-host', None)
 	user = cfg.pull('user')
