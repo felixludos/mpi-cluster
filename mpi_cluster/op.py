@@ -15,26 +15,26 @@ def generic_run(cfg: fig.Configuration):
 		None
 	"""
 
-	output_prefix = cfg.pull('output-prefix', '__output-tag-code__')
+	output_prefix = cfg.pull('output-prefix', '__output_tag_code__')
 
 	command = cfg.pull('command', None)
-	print(command)
-	
+	# print(command)
+
 	# command = json.loads(command)
 	if isinstance(command, str):
-		command = [command]
+		command = shlex.split(command)
 
 	result = subprocess.run(command, capture_output=True, text=True)
 
 	raw = result.stdout
-	print(raw)
+	# print(raw)
 
 	output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
 	print(output)
 
 
 
-def run_command(command, location=None, output_prefix='__output-tag-code__') -> str:
+def run_command(command, location=None, output_prefix='__output_tag_code__') -> str:
 	if location is None:
 		raw = subprocess.check_output(command, shell=True).decode()
 		return raw
@@ -121,6 +121,8 @@ def get_status(cfg: fig.Configuration):
 	q_command = ['echo', '"Hello"']
 
 	output = run_command(q_command, location=location)
+
+	print(output)
 
 	return output
 
