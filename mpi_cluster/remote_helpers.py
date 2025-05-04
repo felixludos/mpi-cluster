@@ -2,8 +2,9 @@ from .imports import *
 from . import misc
 
 
-@fig.script('_generic_run', description='run a command specified from a remote client')
-def generic_run(cfg: fig.Configuration):
+@fig.autoscript('_generic_run', description='run a command specified from a remote client')
+def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__error_tag_code__'):
+# def generic_run(cfg: fig.Configuration):
 	"""
 	Run a command on the cluster.
 
@@ -13,17 +14,22 @@ def generic_run(cfg: fig.Configuration):
 	Returns:
 		None
 	"""
-	output_prefix = cfg.pull('output-prefix', '__output_tag_code__')
-	command = cfg.pull('command', None)
+	# output_prefix = cfg.pull('output-prefix', '__output_tag_code__')
+	# error_prefix = cfg.pull('error-prefix', '__error_tag_code__')
+	# command = cfg.pull('command', None)
 	result = subprocess.run(command, shell=True, capture_output=True, text=True)
 	raw = result.stdout
 	output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
 	raw = result.stderr
-	error = output_prefix + raw.replace('\n', f'\n{output_prefix}')
-	sys.stdout.write(output)
-	sys.stdout.flush()
-	sys.stderr.write(error)
-	sys.stderr.flush()
+	error = error_prefix + raw.replace('\n', f'\n{error_prefix}')
+
+	# sys.stdout.write(output)
+	# sys.stdout.flush()
+	# sys.stderr.write(error)
+	# sys.stderr.flush()
+
+	print(output)
+	print(error)
 
 
 
@@ -32,7 +38,10 @@ def wrap_string(s: str) -> str:
 
 
 
-def run_command(command: str, location: str = None, *, output_prefix: str = '__output_tag_code__') -> Tuple[str, str]:
+def run_command(command: str, location: str = None, *,
+				output_prefix: str = '__output_tag_code__',
+				error_prefix: str = '__error_tag_code__') -> Tuple[str, str]:
+	print(command)
 	if location is None:
 		res = subprocess.run(
 			command,
@@ -40,10 +49,11 @@ def run_command(command: str, location: str = None, *, output_prefix: str = '__o
 			capture_output=True,
 			text=True,
 		)
-		return res.stdout
+		return res.stdout, res.stderr
 
 	args = {
 		'output-prefix': output_prefix,
+		'error-prefix': error_prefix,
 		'command': command,
 	}
 	a = ' '.join(f'--{k} "{wrap_string(v)}"' for k, v in args.items())
@@ -64,11 +74,11 @@ def run_command(command: str, location: str = None, *, output_prefix: str = '__o
 		if line.startswith(output_prefix):
 			output.append(line[len(output_prefix):])
 
-	raw = res.stderr
+	# raw = res.stderr
 	errs = []
 	for line in raw.split('\n'):
-		if line.startswith('Error:'):
-			errs.append(line[len('Error:'):])
+		if line.startswith(error_prefix):
+			errs.append(line[len(error_prefix):])
 
 	return '\n'.join(output).strip(), '\n'.join(errs).strip()
 
