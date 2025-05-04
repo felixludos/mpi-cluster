@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type, Union, Callable, Generator
 from pathlib import Path
 import yaml, json
 import omnifig as fig
