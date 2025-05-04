@@ -28,8 +28,10 @@ def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__e
 	# sys.stderr.write(error)
 	# sys.stderr.flush()
 
-	print(output)
-	print(error)
+	print(output, end='')
+	print(error, end='')
+	sys.stdout.flush()
+
 
 
 
