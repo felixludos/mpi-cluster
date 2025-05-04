@@ -19,17 +19,20 @@ def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__e
 	# command = cfg.pull('command', None)
 	result = subprocess.run(command, shell=True, capture_output=True, text=True)
 	raw = result.stdout
-	output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
+	if len(raw) > 0:
+		output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
+		print(output, end='')
+
 	raw = result.stderr
-	error = error_prefix + raw.replace('\n', f'\n{error_prefix}')
+	if len(raw) > 0:
+		error = error_prefix + raw.replace('\n', f'\n{error_prefix}')
+		print(error, end='')
 
 	# sys.stdout.write(output)
 	# sys.stdout.flush()
 	# sys.stderr.write(error)
 	# sys.stderr.flush()
 
-	print(output, end='')
-	print(error, end='')
 	sys.stdout.flush()
 
 
