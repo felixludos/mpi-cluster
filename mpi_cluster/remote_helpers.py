@@ -65,21 +65,16 @@ def run_command(command: str, location: str = None, *, append_path: Optional[Pat
 		return res.stdout, res.stderr
 
 	args = {
-		'output-prefix': output_prefix,
-		'error-prefix': error_prefix,
+		'output_prefix': output_prefix,
+		'error_prefix': error_prefix,
 		'command': command,
 	}
 	if append_path is not None:
-		args['append-path'] = str(append_path).replace('\\', '/')
+		args['append_path'] = str(append_path).replace('\\', '/')
 	a = ' '.join(f'--{k} "{wrap_string(v)}"' for k, v in args.items())
 	r = f"fig _generic_run {a}"
 	b = f'bash -ic "{wrap_string(r)}"'
 	full = f"ssh {location} '{b}'"
-
-	if append_path is not None:
-		print(command)
-		print()
-		print(full)
 
 	res = subprocess.run(
 		full,
@@ -88,9 +83,6 @@ def run_command(command: str, location: str = None, *, append_path: Optional[Pat
 		text=True,
 	)
 	raw = res.stdout
-
-	if append_path is not None:
-		print(raw)
 
 	output = []
 	for line in raw.split('\n'):
@@ -128,6 +120,10 @@ def write_to_file(text: str, path: Path, location=None):
 			os.remove(tmp_path)
 
 	return path
+
+
+def append_to_file(text: str, path: Path, location=None):
+	run_command(f'"{wrap_string(text)}"', location=location, append_path=wrap_string(str(path)))
 
 
 

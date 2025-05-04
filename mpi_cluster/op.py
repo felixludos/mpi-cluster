@@ -5,7 +5,7 @@ from .imports import *
 from . import misc
 from .cluster import SUBMISSION_FORMAT
 from .status_helpers import parse_job_status, compute_durations, sort_jobkeys, process_data_table
-from .remote_helpers import run_command, load_file, wrap_string, write_to_file
+from .remote_helpers import run_command, load_file, wrap_string, write_to_file, append_to_file
 
 
 @fig.script('status', description='check the status of jobs submitted to the cluster')
@@ -405,8 +405,7 @@ periodic_hold_subcode = 1''')
 		'commands': commands if cfg.pull('include-cmds', False) else None
 	}
 
-	# escaped = shlex.quote(json.dumps(manifest_entry))
-	run_command(f'"{shlex.quote(json.dumps(manifest_entry))}"', location=location, append_path=wrap_string(str(manifest_path)))
+	append_to_file(f'{json.dumps(manifest_entry)}\n', path=manifest_path, location=location)
 
 	# escaped = shlex.quote(json.dumps(manifest_entry))
 	# print(escaped)
