@@ -21,12 +21,12 @@ def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__e
 	raw = result.stdout
 	if len(raw) > 0:
 		output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
-		print(output, end='')
+		print(output)
 
 	raw = result.stderr
 	if len(raw) > 0:
 		error = error_prefix + raw.replace('\n', f'\n{error_prefix}')
-		print(error, end='')
+		print(error)
 
 	# sys.stdout.write(output)
 	# sys.stdout.flush()
