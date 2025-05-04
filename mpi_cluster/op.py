@@ -340,7 +340,8 @@ periodic_hold_subcode = 1''')
 		# path.joinpath(f'job-{i}.sh').write_text(job)
 		run_command(f'echo "{job}" > {path.joinpath(f"job-{i}.sh")}', location=location)
 	# path.joinpath('submit.sub').write_text('\n'.join(sub))
-	run_command(f'echo "{"\n".join(sub)}" > {path.joinpath("submit.sub")}', location=location)
+	full_sub = "\n".join(sub)
+	run_command(f'echo "{full_sub}" > {path.joinpath("submit.sub")}', location=location)
 
 	# Submit jobs
 	bid = cfg.pull('bid', None)
