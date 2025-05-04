@@ -1,11 +1,10 @@
 
 #source /home/fleeb/.bashrc
 
-export HF_HOME="/is/ei/fleeb/.cache/huggingface/"
+#export HF_HOME="/is/ei/fleeb/.cache/huggingface/"
+export HF_HOME="/fast/fleeb/huggingface_cache/"
 export OMNILEARN_SAVE_DIR="/home/fleeb/trained_nets/"
 export OMNILEARN_DATA_DIR="/home/fleeb/local_data/"
-
-export JOB_REGISTRY_PATH="/home/fleeb/jobdir/registry.tsv"
 
 # <header>
 
@@ -18,7 +17,7 @@ echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)" >> "/home/fleeb/j
 #ls
 # conda install -c eumetsat expect
 
-<job>
+{command}
 
 CODE=$?
 

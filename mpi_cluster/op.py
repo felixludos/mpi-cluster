@@ -2,141 +2,8 @@ import sys
 
 from .imports import *
 from . import misc
-from .status import parse_job_status, compute_durations, sort_jobkeys
-
-
-@fig.script('_generic_run', description='run a command specified from a remote client')
-def generic_run(cfg: fig.Configuration):
-	"""
-	Run a command on the cluster.
-
-	Args:
-		cfg (fig.Configuration): The configuration object.
-
-	Returns:
-		None
-	"""
-	output_prefix = cfg.pull('output-prefix', '__output_tag_code__')
-	command = cfg.pull('command', None)
-	result = subprocess.run(command, shell=True, capture_output=True, text=True)
-	raw = result.stdout
-	output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
-	print(output)
-
-
-
-def run_command(command: str, location: str = None, *, output_prefix: str = '__output_tag_code__') -> str:
-	if location is None:
-		res = subprocess.run(
-			command,
-			shell=True,
-			capture_output=True,
-			text=True,
-		)
-		return res.stdout
-
-	c = command.replace('\\', '\\\\').replace('"', '\\"')
-	r = f"fig _generic_run --output-prefix \"{output_prefix}\" --command \"{c}\"".replace('\\', '\\\\').replace('"', '\\"')
-	b = f"bash -ic \"{r}\""
-	full = f"ssh {location} '{b}'"
-
-	res = subprocess.run(
-		full,
-		shell=True,
-		capture_output=True,
-		text=True,
-	)
-	raw = res.stdout
-
-	output = []
-	for line in raw.split('\n'):
-		if line.startswith(output_prefix):
-			output.append(line[len(output_prefix):])
-
-	return '\n'.join(output)
-
-
-_file_cache = misc.repo_root().joinpath('assets', 'file_cache.json')
-_file_cache = None
-def load_file(path: Path, location: str = None) -> str:
-	text = None
-	cache = None
-	pathcode = str(path).replace('\\', '/')
-	if _file_cache is not None:
-		cache = load_json(_file_cache)
-		if pathcode.replace('\\', '/') in cache:
-			return cache[pathcode]
-	if location is None:
-		if path.exists():
-			text = path.read_text()
-	else:
-		command = f'cat {path}'.replace('\\', '/')
-		text = run_command(command, location=location)
-
-	if text is None:
-		raise FileNotFoundError(f'File not found: {path}')
-	if cache is not None:
-		cache[pathcode] = text
-		with open(_file_cache, 'w') as f:
-			json.dump(cache, f)
-	return text
-
-
-
-def process_data_table(file_text: str, cols=None, include_event=None):
-
-	data = pd.read_csv(io.StringIO(file_text), sep='\t', header=None)
-
-	# data = [{k: v for k, v in zip(cols or range(len(row)), row)} for row in data.itertuples(index=False)]
-
-	if cols is None:
-		return data
-
-	dkey = None
-
-	full = []
-	for row in data.itertuples(index=False):
-		info = {}
-		for col, raw in zip(cols, row):
-
-			if 'date' in col:
-				info['date'] = recover_date(raw)
-				if dkey is None:
-					dkey = col
-			elif col == 'ID':
-				info['ID'] = raw.split('#')[1] if '#' in raw and 'sched' in raw else raw
-				info['proc_ID'] = raw.split('#')[2] if '#' in raw and 'sched' in raw else None
-			elif col == 'code':
-				try:
-					info['code'] = int(raw)
-				except TypeError:
-					print(f'failed to parse: {raw}')
-					info['code'] = raw
-			else:
-				info[col] = raw
-
-		if include_event is not None:
-			info['event'] = include_event
-
-		full.append(info)
-
-	if 'ID' not in cols:
-		return full
-
-	jobs = {}
-
-	for info in full:
-		ID = info.get('ID', 'failed')
-		if ID not in jobs:
-			jobs[ID] = []
-		jobs[ID].append(info)
-
-	if dkey is not None:
-
-		for ID, seq in jobs.items():
-			jobs[ID] = sorted(seq, key=lambda x: x[dkey])
-
-	return jobs
+from .status_helpers import parse_job_status, compute_durations, sort_jobkeys, process_data_table
+from .remote_helpers import run_command, load_file
 
 
 
@@ -231,10 +98,6 @@ def get_status(cfg: fig.Configuration):
 		terminals_text = load_file(terminals_path, location=location)
 		terminals = process_data_table(terminals_text, cols=['name', 'ID', 'date', 'host', 'code'], include_event='end')
 
-		# registry_path = cfg.pull('registry-path', jobdir / 'registry.tsv')
-		# registry_text = load_file(registry_path, location=location)
-		# reg = process_data_table(registry_text, cols=['name', 'ID', 'info'])
-
 		failed.extend(starts.get('failed', []))
 		if 'failed' in starts:
 			del starts['failed']
@@ -318,8 +181,175 @@ def get_status(cfg: fig.Configuration):
 
 	return active
 
+	
+def create_jobs(cfg: fig.Configuration, *, commands: Union[list[str], str] = None):
+	"""
+	Create and submit jobs to a cluster based on the provided configuration.
 
+	This function generates job scripts, prepares a submission file, and submits jobs to a cluster. 
+	It also maintains a manifest file to track submitted jobs.
 
+	Args:
+		cfg (fig.Configuration): 
+			Configuration object containing job parameters such as root directory, working directory, 
+			commands, template paths, and resource requirements.
+		commands (Union[list[str], str], optional): 
+			A list of commands or a single command string to execute. If not provided, commands are 
+			loaded from the configuration or a specified file.
+
+	Returns:
+		str: The name of the submitted job.
+
+	Raises:
+		FileNotFoundError: If the command file or template file specified in the configuration does not exist.
+		ValueError: If no commands are provided.
+
+	Key Configuration Parameters:
+		- root: Root directory for resolving relative paths.
+		- working-dir: Directory where the commands will be executed.
+		- commands/command: Commands to execute.
+		- command-path/cmd-path/path: Path to a file containing commands.
+		- template-path: Path to the job script template.
+		- name: Base name for the job.
+		- job-dir: Directory to store job-related files.
+		- manifest-path: Path to the manifest file.
+		- include-date: Whether to include the current date in the job name.
+		- env-vars: Environment variables to set for the job.
+		- ram/mem: Memory requirements in GB.
+		- cpu: Number of CPU cores required.
+		- gpu: Number of GPUs required.
+		- time-limit: Maximum runtime for the job in hours.
+		- bid: Batch ID for job submission.
+		- include-cmds: Whether to include commands in the manifest entry.
+
+	Notes:
+		- The function uses a template to generate job scripts, which can be customized via the 
+		`template-path` configuration parameter.
+		- The manifest file tracks job metadata, including the job name, number, commands, and submission details.
+		- If no `bid` is provided, the job will not be submitted, and a warning will be printed.
+	"""
+	# Resolve root and working directory
+	root = cfg.push_pull('root', None, overwrite=False)
+	if root:
+		root = Path(root)
+
+	working_dir = cfg.pull('working-dir', None)
+	if working_dir:
+		working_dir = Path(working_dir).resolve()
+
+	# Load commands from configuration or file
+	if commands is None:
+		commands = cfg.pulls('commands', 'command', default=None)
+	if isinstance(commands, str):
+		commands = [commands]
+
+	if commands is None:
+		cmd_path = cfg.pulls('command-path', 'cmd-path', 'path', default=None)
+		if cmd_path:
+			cmd_path = Path(cmd_path)
+			if root:
+				cmd_path = root / cmd_path
+			if not cmd_path.exists():
+				raise FileNotFoundError(f'Command file not found: {cmd_path}')
+			commands = [line.strip() for line in cmd_path.open('r') if line.strip() and line[0] != '#']
+
+	if not commands:
+		raise ValueError('No commands provided')
+
+	# Load template for job scripts
+	template_path = cfg.pull('template-path', str(misc.package_root() / 'data' / 'default_template.sh'), silent=True)
+	if template_path:
+		template_path = Path(template_path)
+		if root:
+			template_path = root / template_path
+		if not template_path.exists():
+			raise FileNotFoundError(f'Template file not found: {template_path}')
+		template = template_path.read_text()
+	else:
+		template = f'cd {working_dir}\n{{command}}' if working_dir else '{command}'
+
+	# Prepare job name and directory
+	rawname = cfg.pull('name', 'job')
+	jobdir = Path(cfg.pull('job-dir', str(misc.default_jobdir())))
+	jobdir.mkdir(exist_ok=True, parents=True)
+
+	manifest_path = Path(cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True))
+	num = sum(1 for _ in manifest_path.open('r')) if manifest_path.exists() else 0
+	name = f"{rawname}_{str(num).zfill(3)}"
+	if cfg.pull('include-date', False):
+		name = f"{name}_{datetime.now().strftime('%y%m%d-%H%M%S')}"
+
+	path = jobdir / name
+	path.mkdir(exist_ok=True, parents=True)
+
+	# Generate job scripts
+	jobs = [
+		pformat(template, command=cmd, working_dir=working_dir, job_dir=jobdir, name=name, process=i, path=path)
+		for i, cmd in enumerate(commands)
+	]
+
+	# Prepare submission file
+	sub = []
+	job_path = path / 'job-$(Process).sh'
+	sub.append(f'environment = {";".join(f"{k}={v}" for k, v in cfg.pull("env-vars", {}).items())}')
+	sub.append(f'request_memory = {cfg.pulls("ram", "mem", default=1) * 1024}')
+	sub.append(f'request_cpus = {cfg.pull("cpu", 1)}')
+
+	if cfg.pull('gpu', 0) > 0:
+		sub.append(f'request_gpus = {cfg.pull("gpu", 0)}')
+
+	sub.append('''on_exit_hold = (ExitCode =?= 3)
+on_exit_hold_reason = "Checkpointed, will resume"
+on_exit_hold_subcode = 2
+periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReasonSubCode =?= 1) || (HoldReasonSubCode =?= 2)) )''')
+
+	time_limit = cfg.pull('time-limit', None)
+	if time_limit:
+		sub.append(f'''MaxTime = {int(float(time_limit) * 3600)}
+periodic_hold = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))
+periodic_hold_reason = "Job runtime exceeded"
+periodic_hold_subcode = 1''')
+
+	stdout_path = path / 'stdout-$(Process).txt'
+	log_path = path / 'log-$(Process).txt'
+	sub.append(SUBMISSION_FORMAT.format(exec=job_path, err=stdout_path, out=stdout_path, log=log_path, procs=len(commands)))
+
+	# Write job scripts and submission file
+	for i, job in enumerate(jobs):
+		(path / f'job-{i}.sh').write_text(job)
+	(path / 'submit.sub').write_text('\n'.join(sub))
+
+	# Submit jobs
+	bid = cfg.pull('bid', None)
+	if not bid:
+		cfg.print('WARNING: Job not submitted because no bid was included')
+		return name
+
+	process = subprocess.Popen(['condor_submit_bid', str(bid), str(path / 'submit.sub')],
+								stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	out, _ = process.communicate()
+	ID = out.decode().split('submitted to cluster ')[-1].strip() if 'submitted to cluster ' in out.decode() else None
+
+	if not ID:
+		cfg.print('WARNING: Job not submitted because no ID was returned')
+		return name
+
+	# Update manifest
+	manifest_entry = {
+		'name': name,
+		'job-num': num,
+		'procs': len(commands),
+		'path': str(path),
+		'date': datetime.now().strftime("%y%m%d-%H%M%S"),
+		'bid': bid,
+		'ID': ID,
+		'commands': commands if cfg.pull('include-cmds', False) else None
+	}
+	with manifest_path.open('a') as f:
+		f.write(f'{json.dumps(manifest_entry)}\n')
+
+	cfg.print(f'Job {name} submitted: {bid}')
+	return name
 
 
 
