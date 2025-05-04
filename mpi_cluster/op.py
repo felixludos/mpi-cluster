@@ -57,6 +57,7 @@ def run_command(command: str, location: str = None, *, output_prefix: str = '__o
 
 
 _file_cache = misc.repo_root().joinpath('assets', 'file_cache.json')
+_file_cache = None
 def load_file(path: Path, location: str = None) -> str:
 	text = None
 	cache = None
