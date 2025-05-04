@@ -6,3 +6,7 @@ __version__ = '0.2.0'
 # from . import get_status, purge_jobs, submit_jobs
 # from . import llms
 from .op import get_status
+try:
+    from . import llms
+except ImportError:
+    pass

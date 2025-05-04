@@ -94,8 +94,7 @@ async def run_server(args, **uvicorn_kwargs) -> None:
 		sock.close()
 
 
-@fig.script('vllm', description='vLLM OpenAI-Compatible RESTful API server')
-def launch_vllm_server(cfg: fig.Configuration):
+def run_vllm_server(argv = None):
 	"""
 	Launch a vLLM server through the cluster.
 
@@ -105,18 +104,6 @@ def launch_vllm_server(cfg: fig.Configuration):
 	Returns:
 		None
 	"""
-	raw_args = cfg.pull(silent=True)
-
-	argv = []
-	for k, v in raw_args.items():
-		if isinstance(v, str):
-			v = f'"{v.replace("\\", "\\\\").replace("\"", "\\\"")}"'
-		if isinstance(v, bool):
-			if v:
-				argv.append(f"--{k}")
-		else:
-			argv.append(f"--{k}={v}")
-
 	cli_env_setup()
 	parser = FlexibleArgumentParser(
 		description="vLLM OpenAI-Compatible RESTful API server.")
@@ -132,4 +119,4 @@ def launch_vllm_server(cfg: fig.Configuration):
 
 
 if __name__ == "__main__":
-	fig.entry('vllm')
+	run_vllm_server()
