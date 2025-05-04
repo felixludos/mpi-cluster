@@ -289,6 +289,8 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 
 	manifest_path = Path(cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True))
 	rawtext, _ = run_command(f'wc -l {manifest_path}', location=location)
+	print(rawtext)
+	print(_)
 	num = int(rawtext.split()[0]) if rawtext is not None or len(rawtext) else 0
 	# num = sum(1 for _ in manifest_path.open('r')) if manifest_path.exists() else 0
 	name = f"{rawname}_{str(num).zfill(3)}"

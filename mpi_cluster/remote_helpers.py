@@ -21,7 +21,9 @@ def generic_run(cfg: fig.Configuration):
 	raw = result.stderr
 	error = output_prefix + raw.replace('\n', f'\n{output_prefix}')
 	sys.stdout.write(output)
+	sys.stdout.flush()
 	sys.stderr.write(error)
+	sys.stderr.flush()
 
 
 
