@@ -6,11 +6,11 @@
 # Header
 ###############
 
-cd "{working_dir}"
+cd {working_dir}
 
 echo "-- starting job $(date) --"
 
-echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)" >> "{job_dir}/starts.tsv"
+echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)" >> {job_dir}/starts.tsv
 
 
 ###############
@@ -31,7 +31,7 @@ echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)" >> "{job_dir}/sta
 
 CODE=$?
 
-echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)\t$CODE" >> "{job_dir}/terminals.tsv"
+echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)\t$CODE" >> {job_dir}/terminals.tsv
 
 if [ $CODE -eq 3 ]
 then
@@ -39,7 +39,6 @@ then
   exit 3
 fi
 
-#echo "DEVICE"
 #echo $CUDA_VISIBLE_DEVICES
 #
 #nvidia-smi

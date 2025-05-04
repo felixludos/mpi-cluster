@@ -3,18 +3,26 @@
 
 #_base: [me]
 
-_meta.script_name: status
+##########################
 
-_base: [remote]
+_meta.script_name: launch
 
-user: fleeb
+_base: [cluster]
 
+model: phi4
+bid: 1000
 
-active-only: yes
+##########################
 
-silent: yes
+#_meta.script_name: status
+#_base: [cluster]
 
-no-active: yes
+#user: fleeb
+#active-only: yes
+#silent: yes
+#no-active: yes
+
+##########################
 
 
 #_base: [jobs]

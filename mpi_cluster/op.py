@@ -5,7 +5,7 @@ from .imports import *
 from . import misc
 from .cluster import SUBMISSION_FORMAT
 from .status_helpers import parse_job_status, compute_durations, sort_jobkeys, process_data_table
-from .remote_helpers import run_command, load_file, wrap_string
+from .remote_helpers import run_command, load_file, wrap_string, write_to_file
 
 
 @fig.script('status', description='check the status of jobs submitted to the cluster')
@@ -247,6 +247,8 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 	working_dir = cfg.pull('working-dir', None)
 	if working_dir:
 		working_dir = Path(working_dir).resolve()
+	if working_dir is None:
+		working_dir = '.'
 
 	# Load commands from configuration or file
 	if commands is None:
@@ -288,8 +290,6 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 
 	manifest_path = Path(cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True))
 	rawtext, _ = run_command(f'wc -l {manifest_path}', location=location)
-	print(rawtext)
-	print(_)
 	num = int(rawtext.split()[0]) if rawtext is not None or len(rawtext) else 0
 	# num = sum(1 for _ in manifest_path.open('r')) if manifest_path.exists() else 0
 	name = f"{rawname}_{str(num).zfill(3)}"
@@ -311,7 +311,18 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 	# Prepare submission file
 	sub = []
 	job_path = path / 'job-$(Process).sh'
-	sub.append(f'environment = {";".join(f"{k}={v}" for k, v in cfg.pull("env-vars", {}).items())}')
+	env_vars = cfg.pull("env-vars", {})
+	base_env = {
+		'JOBDIR': path,
+		'JOBEXEC': job_path,
+		'PROCESS_ID': '$(Process)',
+		'JOB_ID': '$(ID)',
+		'JOB_NAME': name,
+		'JOB_NUM': num,
+	}
+	if env_vars is not None:
+		base_env.update(env_vars)
+	sub.append(f'environment = {";".join(f"{k}={v}" for k, v in base_env.items())}')
 	sub.append(f'request_memory = {cfg.pulls("ram", "mem", default=1) * 1024}')
 	sub.append(f'request_cpus = {cfg.pull("cpu", 1)}')
 
@@ -337,10 +348,17 @@ periodic_hold_subcode = 1''')
 	# Write job scripts and submission file
 	for i, job in enumerate(jobs):
 		# path.joinpath(f'job-{i}.sh').write_text(job)
-		run_command(f'echo "{wrap_string(job)}" > {path.joinpath(f"job-{i}.sh")}', location=location)
+		write_to_file(job, path=path / f'job-{i}.sh', location=location)
+		# out, err = run_command(f'echo "{wrap_string(job)}" > {path.joinpath(f"job-{i}.sh")}', location=location)
+		# print(out)
+		# print(err)
+		# if len(err):
+		# 	cfg.print(f'WARNING: Failed to write job script {i}:\n{err}')
+		# 	return
 	# path.joinpath('submit.sub').write_text('\n'.join(sub))
 	full_sub = "\n".join(sub)
-	run_command(f'echo "{wrap_string(full_sub)}" > {path.joinpath("submit.sub")}', location=location)
+	write_to_file(full_sub, path=path.joinpath("submit.sub"), location=location)
+	# run_command(f'echo "{wrap_string(full_sub)}" > {path.joinpath("submit.sub")}', location=location)
 
 	# Submit jobs
 	bid = cfg.pull('bid', None)
@@ -387,9 +405,21 @@ periodic_hold_subcode = 1''')
 		'commands': commands if cfg.pull('include-cmds', False) else None
 	}
 
-	out, err = run_command(f'echo "{wrap_string(json.dumps(manifest_entry))}\n" >> {manifest_path}', location=location)
-	print(f'Output: {out}')
-	print(f'Error: {err}')
+
+
+	escaped = shlex.quote(json.dumps(manifest_entry))
+	print(escaped)
+	out, err = run_command(
+	f'printf %s\\n {escaped} >> {manifest_path}', location=location
+		# f'echo -e "{wrap_string(json.dumps(manifest_entry))}\\n" >> {manifest_path}', location=location
+	)
+
+	# f'cat >> {manifest_path} << EOF\n{json.dumps(manifest_entry)}\nEOF', location=location
+
+	# out, err = run_command(
+	# 	f'echo -e "{wrap_string(json.dumps(manifest_entry))}\\n" >> {manifest_path}', location=location)
+	# print(f'Output: {out}')
+	# print(f'Error: {err}')
 	# with manifest_path.open('a') as f:
 	# 	f.write(f'{json.dumps(manifest_entry)}\n')
 
@@ -398,7 +428,7 @@ periodic_hold_subcode = 1''')
 
 
 
-
+# echo -e "{\"name\": \"job_054\", \"job-num\": 54, \"procs\": 1, \"path\": \"/home/fleeb/.cluster_jobs/job_054\", \"date\": \"250505-002609\", \"bid\": 1000, \"ID\": \"16166937.\", \"commands\": null}\n" >> /home/fleeb/.cluster_jobs/manifest.jsonl
 
 
 

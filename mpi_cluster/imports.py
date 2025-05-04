@@ -5,6 +5,7 @@ import omnifig as fig
 import sys, os, shutil, io
 import shlex
 import socket
+import tempfile
 import subprocess
 import pickle
 import pandas as pd

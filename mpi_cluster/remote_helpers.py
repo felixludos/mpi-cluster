@@ -3,7 +3,7 @@ from . import misc
 
 
 @fig.autoscript('_generic_run', description='run a command specified from a remote client')
-def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__error_tag_code__'):
+def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__error_tag_code__', append_path=None):
 # def generic_run(cfg: fig.Configuration):
 	"""
 	Run a command on the cluster.
@@ -14,6 +14,13 @@ def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__e
 	Returns:
 		None
 	"""
+	if append_path is not None:
+		print(f'Appending to {append_path}:\n{command}')
+		append_path = Path(append_path)
+		with append_path.open('a') as f:
+			f.write(command)
+		return
+
 	# output_prefix = cfg.pull('output-prefix', '__output_tag_code__')
 	# error_prefix = cfg.pull('error-prefix', '__error_tag_code__')
 	# command = cfg.pull('command', None)
@@ -37,14 +44,15 @@ def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__e
 
 
 
-
 def wrap_string(s: str) -> str:
+			# .replace('$', '\\$').replace('#!', '\\#!'))
+			# .replace('$(', '\\$(').replace('$?{', '\\${'))
 	return (s.replace('\\', '\\\\').replace('"', '\\"')
-			.replace('\n', '\\n').replace('\t', '\\t')
-			.replace('$(', '\\$('))
+			.replace('\n', '\\n').replace('\t', '\\t'))
 
 
-def run_command(command: str, location: str = None, *,
+
+def run_command(command: str, location: str = None, *, append_path: Optional[Path] = None,
 				output_prefix: str = '__output_tag_code__',
 				error_prefix: str = '__error_tag_code__') -> Tuple[str, str]:
 	if location is None:
@@ -61,10 +69,17 @@ def run_command(command: str, location: str = None, *,
 		'error-prefix': error_prefix,
 		'command': command,
 	}
+	if append_path is not None:
+		args['append-path'] = str(append_path).replace('\\', '/')
 	a = ' '.join(f'--{k} "{wrap_string(v)}"' for k, v in args.items())
 	r = f"fig _generic_run {a}"
 	b = f'bash -ic "{wrap_string(r)}"'
 	full = f"ssh {location} '{b}'"
+
+	if append_path is not None:
+		print(command)
+		print()
+		print(full)
 
 	res = subprocess.run(
 		full,
@@ -73,6 +88,9 @@ def run_command(command: str, location: str = None, *,
 		text=True,
 	)
 	raw = res.stdout
+
+	if append_path is not None:
+		print(raw)
 
 	output = []
 	for line in raw.split('\n'):
@@ -86,6 +104,30 @@ def run_command(command: str, location: str = None, *,
 			errs.append(line[len(error_prefix):])
 
 	return '\n'.join(output).strip(), '\n'.join(errs).strip()
+
+
+
+def write_to_file(text: str, path: Path, location=None):
+	if location is None:
+		path.write_text(text)
+	else:
+		with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.sh') as tmp:
+			tmp.write(text)
+			tmp_path = tmp.name
+
+		try:
+			# 3. Copy the script to the remote server
+			subprocess.run(
+				f'scp {tmp_path} {location}:{path}',
+				shell=True,
+			capture_output=True,
+				check=True
+			)
+		finally:
+			# 5. Clean up the local temp file
+			os.remove(tmp_path)
+
+	return path
 
 
 
