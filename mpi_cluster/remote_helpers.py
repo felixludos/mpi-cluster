@@ -18,7 +18,10 @@ def generic_run(cfg: fig.Configuration):
 	result = subprocess.run(command, shell=True, capture_output=True, text=True)
 	raw = result.stdout
 	output = output_prefix + raw.replace('\n', f'\n{output_prefix}')
-	print(output)
+	raw = result.stderr
+	error = output_prefix + raw.replace('\n', f'\n{output_prefix}')
+	sys.stdout.write(output)
+	sys.stderr.write(error)
 
 
 
@@ -27,7 +30,7 @@ def wrap_string(s: str) -> str:
 
 
 
-def run_command(command: str, location: str = None, *, output_prefix: str = '__output_tag_code__') -> str:
+def run_command(command: str, location: str = None, *, output_prefix: str = '__output_tag_code__') -> Tuple[str, str]:
 	if location is None:
 		res = subprocess.run(
 			command,
@@ -60,7 +63,13 @@ def run_command(command: str, location: str = None, *, output_prefix: str = '__o
 		if line.startswith(output_prefix):
 			output.append(line[len(output_prefix):])
 
-	return '\n'.join(output)
+	raw = res.stderr
+	errs = []
+	for line in raw.split('\n'):
+		if line.startswith('Error:'):
+			errs.append(line[len('Error:'):])
+
+	return '\n'.join(output), '\n'.join(errs)
 
 
 
