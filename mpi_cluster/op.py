@@ -405,14 +405,15 @@ periodic_hold_subcode = 1''')
 		'commands': commands if cfg.pull('include-cmds', False) else None
 	}
 
+	# escaped = shlex.quote(json.dumps(manifest_entry))
+	run_command(f'"{shlex.quote(json.dumps(manifest_entry))}"', location=location, append_path=wrap_string(str(manifest_path)))
 
-
-	escaped = shlex.quote(json.dumps(manifest_entry))
-	print(escaped)
-	out, err = run_command(
-	f'printf %s\\n {escaped} >> {manifest_path}', location=location
-		# f'echo -e "{wrap_string(json.dumps(manifest_entry))}\\n" >> {manifest_path}', location=location
-	)
+	# escaped = shlex.quote(json.dumps(manifest_entry))
+	# print(escaped)
+	# out, err = run_command(
+	# f'printf %s\\n {escaped} >> {manifest_path}', location=location
+	# 	# f'echo -e "{wrap_string(json.dumps(manifest_entry))}\\n" >> {manifest_path}', location=location
+	# )
 
 	# f'cat >> {manifest_path} << EOF\n{json.dumps(manifest_entry)}\nEOF', location=location
 
