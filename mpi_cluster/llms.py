@@ -17,8 +17,8 @@ def is_cluster(name: str) -> bool:
 def get_gpu_info(location: str = None) -> Optional[List[Dict[str, Union[str, int]]]]:
 	cmd = 'nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits'
 
-	raw = run_command(cmd, location=location).strip()
-	if raw == '':
+	raw, _ = run_command(cmd, location=location)
+	if raw.strip() == '':
 		return None
 
 	devices = raw.strip().split('\n')
@@ -114,7 +114,7 @@ def launch_llm(cfg: fig.Configuration):
 
 
 
-@fig.script('serving', description='Get information about currently active servers')
+# @fig.script('serving', description='Get information about currently active servers')
 def view_serving(cfg: fig.Configuration):
 	raise NotImplementedError
 

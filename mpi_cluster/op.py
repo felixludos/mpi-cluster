@@ -42,7 +42,7 @@ def get_status(cfg: fig.Configuration):
 		q_command = ' '.join(q_command)
 		# q_command = 'echo "Hello world"'
 
-		raw = run_command(q_command, location=location).strip()
+		raw, _ = run_command(q_command, location=location).strip()
 
 		lines = raw.split('\n')
 		active = [parse_job_status(dict(zip(q_status_columns, line.split('\t')))) for line in lines if len(line)]
@@ -288,8 +288,8 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 		jobdir.mkdir(exist_ok=True, parents=True)
 
 	manifest_path = Path(cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True))
-	rawtext = run_command(f'wc -l {manifest_path}', location=location)
-	num = int(rawtext.strip().split()[0]) if rawtext is not None or len(rawtext) else 0
+	rawtext, _ = run_command(f'wc -l {manifest_path}', location=location)
+	num = int(rawtext.split()[0]) if rawtext is not None or len(rawtext) else 0
 	# num = sum(1 for _ in manifest_path.open('r')) if manifest_path.exists() else 0
 	name = f"{rawname}_{str(num).zfill(3)}"
 	if cfg.pull('include-date', False):
@@ -365,7 +365,7 @@ periodic_hold_subcode = 1''')
 	cfg.push('confirm', True, silent=True)
 
 	submission_command = f'condor_submit_bid {bid} {path / "submit.sub"}'
-	out = run_command(submission_command, location=location)
+	out, err = run_command(submission_command, location=location)
 
 	print(f'Output: {out}')
 

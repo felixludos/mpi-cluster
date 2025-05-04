@@ -55,7 +55,6 @@ def run_command(command: str, location: str = None, *, output_prefix: str = '__o
 		capture_output=True,
 		text=True,
 	)
-	print(res.stderr)
 	raw = res.stdout
 
 	output = []
@@ -69,7 +68,7 @@ def run_command(command: str, location: str = None, *, output_prefix: str = '__o
 		if line.startswith('Error:'):
 			errs.append(line[len('Error:'):])
 
-	return '\n'.join(output), '\n'.join(errs)
+	return '\n'.join(output).strip(), '\n'.join(errs).strip()
 
 
 
