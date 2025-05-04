@@ -3,4 +3,4 @@ _base: [me]
 
 job-dir: /home/fleeb/.cluster_jobs
 
-remote-host: login.cluster.is.localnet
+host: login.cluster.is.localnet

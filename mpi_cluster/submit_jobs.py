@@ -40,7 +40,7 @@ def git_update(git_repos=None):
 
 
 
-@fig.script('submit', description='Submit jobs to the cluster')
+# @fig.script('submit', description='Submit jobs to the cluster')
 def create_jobs(cfg: fig.Configuration, *, commands: Union[list[str], str] = None):
 	"""
 	Create and submit jobs based on the given configuration.

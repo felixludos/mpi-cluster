@@ -23,7 +23,7 @@ def generic_run(cfg: fig.Configuration):
 
 
 def wrap_string(s: str) -> str:
-	return s.replace('\\', '\\\\').replace('"', '\\"')
+	return s.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
 
 
 
@@ -52,6 +52,7 @@ def run_command(command: str, location: str = None, *, output_prefix: str = '__o
 		capture_output=True,
 		text=True,
 	)
+	print(res.stderr)
 	raw = res.stdout
 
 	output = []

@@ -1,7 +1,9 @@
+import subprocess
 import sys
 
 from .imports import *
 from . import misc
+from .cluster import SUBMISSION_FORMAT
 from .status_helpers import parse_job_status, compute_durations, sort_jobkeys, process_data_table
 from .remote_helpers import run_command, load_file
 
@@ -22,7 +24,7 @@ def get_status(cfg: fig.Configuration):
 	silent = cfg.pull('silent', False, silent=True)
 	cfg.silent = silent
 
-	host = cfg.pull('remote-host', None)
+	host = cfg.pull('host', None)
 	user = cfg.pull('user')
 	location = None if host is None else f'{user}@{host}'
 
@@ -181,8 +183,10 @@ def get_status(cfg: fig.Configuration):
 
 	return active
 
-	
-def create_jobs(cfg: fig.Configuration, *, commands: Union[list[str], str] = None):
+
+_not_set = object()
+@fig.script('submit', description='submit jobs to the cluster')
+def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _not_set, confirm: bool = None):
 	"""
 	Create and submit jobs to a cluster based on the provided configuration.
 
@@ -228,6 +232,14 @@ def create_jobs(cfg: fig.Configuration, *, commands: Union[list[str], str] = Non
 		- The manifest file tracks job metadata, including the job name, number, commands, and submission details.
 		- If no `bid` is provided, the job will not be submitted, and a warning will be printed.
 	"""
+
+	if location is _not_set:
+		host = cfg.pull('host', None)
+		user = cfg.pull('user', None)
+		location = None if host is None or user is None else f'{user}@{host}'
+
+	now = datetime.now()
+
 	# Resolve root and working directory
 	root = cfg.push_pull('root', None, overwrite=False)
 	if root:
@@ -257,7 +269,8 @@ def create_jobs(cfg: fig.Configuration, *, commands: Union[list[str], str] = Non
 		raise ValueError('No commands provided')
 
 	# Load template for job scripts
-	template_path = cfg.pull('template-path', str(misc.package_root() / 'data' / 'default_template.sh'), silent=True)
+	template_path = cfg.pull('template-path',
+							 str(misc.repo_root().joinpath('assets', 'default_template.sh')), silent=True)
 	if template_path:
 		template_path = Path(template_path)
 		if root:
@@ -266,25 +279,31 @@ def create_jobs(cfg: fig.Configuration, *, commands: Union[list[str], str] = Non
 			raise FileNotFoundError(f'Template file not found: {template_path}')
 		template = template_path.read_text()
 	else:
-		template = f'cd {working_dir}\n{{command}}' if working_dir else '{command}'
+		template = f'cd {{working_dir}}\n{{command}}' if working_dir else '{command}'
 
 	# Prepare job name and directory
 	rawname = cfg.pull('name', 'job')
 	jobdir = Path(cfg.pull('job-dir', str(misc.default_jobdir())))
-	jobdir.mkdir(exist_ok=True, parents=True)
+	if location is None:
+		jobdir.mkdir(exist_ok=True, parents=True)
 
 	manifest_path = Path(cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True))
-	num = sum(1 for _ in manifest_path.open('r')) if manifest_path.exists() else 0
+	rawtext = run_command(f'wc -l {manifest_path}', location=location)
+	num = int(rawtext.strip().split()[0]) if rawtext is not None or len(rawtext) else 0
+	# num = sum(1 for _ in manifest_path.open('r')) if manifest_path.exists() else 0
 	name = f"{rawname}_{str(num).zfill(3)}"
 	if cfg.pull('include-date', False):
-		name = f"{name}_{datetime.now().strftime('%y%m%d-%H%M%S')}"
+		name = f"{name}_{now.strftime('%y%m%d-%H%M%S')}"
+
+	print(f'Setting up job: {name}')
 
 	path = jobdir / name
-	path.mkdir(exist_ok=True, parents=True)
+	run_command(f'mkdir -p {str(path)}', location=location)
 
 	# Generate job scripts
 	jobs = [
-		pformat(template, command=cmd, working_dir=working_dir, job_dir=jobdir, name=name, process=i, path=path)
+		pformat(template, command=cmd, working_dir=working_dir, job_dir=jobdir, name=name, process=i, path=path,
+				date=now)
 		for i, cmd in enumerate(commands)
 	]
 
@@ -316,8 +335,10 @@ periodic_hold_subcode = 1''')
 
 	# Write job scripts and submission file
 	for i, job in enumerate(jobs):
-		(path / f'job-{i}.sh').write_text(job)
-	(path / 'submit.sub').write_text('\n'.join(sub))
+		# path.joinpath(f'job-{i}.sh').write_text(job)
+		run_command(f'echo "{job}" > {path.joinpath(f"job-{i}.sh")}', location=location)
+	# path.joinpath('submit.sub').write_text('\n'.join(sub))
+	run_command(f'echo "{"\n".join(sub)}" > {path.joinpath("submit.sub")}', location=location)
 
 	# Submit jobs
 	bid = cfg.pull('bid', None)
@@ -325,10 +346,30 @@ periodic_hold_subcode = 1''')
 		cfg.print('WARNING: Job not submitted because no bid was included')
 		return name
 
-	process = subprocess.Popen(['condor_submit_bid', str(bid), str(path / 'submit.sub')],
-								stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	out, _ = process.communicate()
-	ID = out.decode().split('submitted to cluster ')[-1].strip() if 'submitted to cluster ' in out.decode() else None
+	cfg.print(tabulate(enumerate(commands), headers=['i', 'command']))
+
+	if confirm is None:
+		confirm = cfg.pull('confirm', False, silent=True)
+	if not confirm:
+		resp = None
+		while resp is None:
+			resp = input(f'Submit {len(commands)} jobs ([y]/n)? ')
+			if resp.lower() in {'n', 'no'}:
+				print('Nothing was submitted.')
+				return
+			elif resp.lower() in {'y', 'yes', ''}:
+				break
+			else:
+				print(f'Invalid response: {resp!r}')
+				resp = None
+	cfg.push('confirm', True, silent=True)
+
+	submission_command = f'condor_submit_bid {bid} {path / "submit.sub"}'
+	out = run_command(submission_command, location=location)
+
+	print(f'Output: {out}')
+
+	ID = out.split('submitted to cluster ')[-1].strip() if 'submitted to cluster ' in out else None
 
 	if not ID:
 		cfg.print('WARNING: Job not submitted because no ID was returned')
@@ -340,7 +381,7 @@ periodic_hold_subcode = 1''')
 		'job-num': num,
 		'procs': len(commands),
 		'path': str(path),
-		'date': datetime.now().strftime("%y%m%d-%H%M%S"),
+		'date': now.strftime("%y%m%d-%H%M%S"),
 		'bid': bid,
 		'ID': ID,
 		'commands': commands if cfg.pull('include-cmds', False) else None

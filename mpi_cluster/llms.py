@@ -1,14 +1,116 @@
 from .imports import *
-# from . import vllm_server
+from .misc import repo_root
+from .remote_helpers import run_command
+from .op import create_jobs
+
+
+def is_cluster(name: str) -> bool:
+	"""
+	Determine if the given name is the cluster (requiring jobs to be submitted)
+
+	on the MPI cluster the name will be login1.internal.cluster.is.localnet
+	"""
+	return name.endswith("cluster.is.localnet")
 
 
 
-@fig.script('launch', description='Launch a vllm server through the cluster')
+def get_gpu_info(location: str = None) -> Optional[List[Dict[str, Union[str, int]]]]:
+	cmd = 'nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits'
+
+	raw = run_command(cmd, location=location).strip()
+	if raw == '':
+		return None
+
+	devices = raw.strip().split('\n')
+	devices = [{'name': name.strip(), 'ram': int(ram.strip())} for name, ram in (d.split(',') for d in devices)]
+	return devices
+
+
+
+@fig.script('launch', description='Launch a vllm server through the cluster (usually remote)')
 def launch_llm(cfg: fig.Configuration):
+	silent = cfg.pull('silent', False, silent=True)
+	cfg.silent = silent
 
+	me = socket.gethostname()
+	full_me = socket.getfqdn()
+	user = cfg.pull('user', None)
+	host = cfg.pull('host', None)
+	if host is not None:
+		assert user is not None, f'host is specified, but user is not'
+	location = f'{user}@{host}' if user is not None and host is not None else None
+	launch_location = full_me if location is None else location
+	launch_on_cluster = is_cluster(launch_location)
 
+	_local_msg = 'launching locally' if host is None else 'launch in job' if is_cluster(host) else f'launch on {host}'
+	print(f'Currently on {me} - {_local_msg}')
 
-	pass
+	gpu_devices = get_gpu_info(location)
+	total_gpu_ram = sum([d['ram'] for d in gpu_devices]) if gpu_devices is not None else 0
+
+	model = cfg.pull('model', None)
+
+	acc_path = repo_root().joinpath('assets', 'vllm-settings.yml')
+	acc = load_yaml(acc_path)
+
+	available = cfg.pull('available', False, silent=True)
+	if available:
+		def format_gpu_req(resources):
+			n = resources.get('gpu', 0)
+			if n == 0:
+				return '-'
+			m = resources.get('gpu-ram')
+			if n == 1:
+				return '?' if m is None else f'{m}'
+			return f'{n}x?' if m is None else f'{n}x{m}'
+
+		items = [{'key': key, 'model': item['model'], 'gpu-req': format_gpu_req(item['resources']),
+				   'compatible': launch_on_cluster
+						or total_gpu_ram >= item['resources'].get('gpu-ram',0)*item['resources'].get('gpu',1)*1024}
+				  for key, item in acc.items()]
+		items = sorted(items, key=lambda x: (not x['compatible'], x['model'], x['key']))
+		for i, item in enumerate(items):
+			item['index'] = i
+
+		tbl = [
+			[item['index'], colorize(item['key'], 'yellow'), item['model'], item['gpu-req']]
+		for item in items]
+		print(tabulate(tbl))
+
+		while model is None:
+			model = input('Select a model> ').strip()
+			if model not in available:
+				try:
+					model = int(model)
+				except ValueError:
+					model = None
+				else:
+					if model < 0 or model >= len(items):
+						model = None
+					else:
+						model = items[model]['key']
+
+	vllm_dir = cfg.pull('vllm-dir', '/home/fleeb/workspace/code/clones/vllm')
+
+	settings = acc.get(model, None)
+	if settings is None:
+		raise KeyError(f'no such model settings found {model}')
+
+	model_name = settings['model']
+
+	port = cfg.pull('port', 8000)
+
+	command = f'fig vllm --model {model_name} --port {port} {settings["command"]}'.format(vllm_dir=vllm_dir)
+	resources = settings['resources']
+
+	# cfg.push('command', command, silent=True)
+	for k, v in resources.items():
+		cfg.push(k, v, silent=True)
+
+	print('command would be:', command)
+	command = 'echo "Hello world"'
+
+	return create_jobs(cfg, commands=command, location=location, confirm=True)
 
 
 
@@ -30,6 +132,8 @@ def launch_vllm_server(cfg: fig.Configuration):
 	Returns:
 		None
 	"""
+
+	#
 
 	import shlex
 	raw_args = cfg.pull(silent=True)
