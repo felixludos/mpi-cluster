@@ -5,8 +5,7 @@ from .imports import *
 from . import misc
 from .cluster import SUBMISSION_FORMAT
 from .status_helpers import parse_job_status, compute_durations, sort_jobkeys, process_data_table
-from .remote_helpers import run_command, load_file
-
+from .remote_helpers import run_command, load_file, wrap_string
 
 
 @fig.script('status', description='check the status of jobs submitted to the cluster')
@@ -42,7 +41,7 @@ def get_status(cfg: fig.Configuration):
 		q_command = ' '.join(q_command)
 		# q_command = 'echo "Hello world"'
 
-		raw, _ = run_command(q_command, location=location).strip()
+		raw, _ = run_command(q_command, location=location)
 
 		lines = raw.split('\n')
 		active = [parse_job_status(dict(zip(q_status_columns, line.split('\t')))) for line in lines if len(line)]
@@ -338,10 +337,10 @@ periodic_hold_subcode = 1''')
 	# Write job scripts and submission file
 	for i, job in enumerate(jobs):
 		# path.joinpath(f'job-{i}.sh').write_text(job)
-		run_command(f'echo "{job}" > {path.joinpath(f"job-{i}.sh")}', location=location)
+		run_command(f'echo "{wrap_string(job)}" > {path.joinpath(f"job-{i}.sh")}', location=location)
 	# path.joinpath('submit.sub').write_text('\n'.join(sub))
 	full_sub = "\n".join(sub)
-	run_command(f'echo "{full_sub}" > {path.joinpath("submit.sub")}', location=location)
+	run_command(f'echo "{wrap_string(full_sub)}" > {path.joinpath("submit.sub")}', location=location)
 
 	# Submit jobs
 	bid = cfg.pull('bid', None)
@@ -370,12 +369,10 @@ periodic_hold_subcode = 1''')
 	submission_command = f'condor_submit_bid {bid} {path / "submit.sub"}'
 	out, err = run_command(submission_command, location=location)
 
-	print(f'Output: {out}')
-
 	ID = out.split('submitted to cluster ')[-1].strip() if 'submitted to cluster ' in out else None
 
 	if not ID:
-		cfg.print('WARNING: Job not submitted because no ID was returned')
+		cfg.print(f'WARNING: Job {name} not submitted because no ID was returned')
 		return name
 
 	# Update manifest
@@ -389,8 +386,12 @@ periodic_hold_subcode = 1''')
 		'ID': ID,
 		'commands': commands if cfg.pull('include-cmds', False) else None
 	}
-	with manifest_path.open('a') as f:
-		f.write(f'{json.dumps(manifest_entry)}\n')
+
+	out, err = run_command(f'echo "{wrap_string(json.dumps(manifest_entry))}\n" >> {manifest_path}', location=location)
+	print(f'Output: {out}')
+	print(f'Error: {err}')
+	# with manifest_path.open('a') as f:
+	# 	f.write(f'{json.dumps(manifest_entry)}\n')
 
 	cfg.print(f'Job {name} submitted: {bid}')
 	return name

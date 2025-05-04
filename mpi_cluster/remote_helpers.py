@@ -39,14 +39,12 @@ def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__e
 
 
 def wrap_string(s: str) -> str:
-	return s.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
-
-
+	return (s.replace('\\', '\\\\').replace('"', '\\"')
+			.replace('\n', '\\n').replace('$(', '\\$('))
 
 def run_command(command: str, location: str = None, *,
 				output_prefix: str = '__output_tag_code__',
 				error_prefix: str = '__error_tag_code__') -> Tuple[str, str]:
-	print(command)
 	if location is None:
 		res = subprocess.run(
 			command,
