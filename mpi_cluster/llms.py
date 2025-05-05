@@ -8,13 +8,14 @@ from .op import create_jobs
 
 
 def is_cluster(name: str) -> bool:
-	"""
-	Determine if the given name is the cluster (requiring jobs to be submitted)
-
-	on the MPI cluster the name will be login1.internal.cluster.is.localnet
-	"""
 	# regex pattern that matches: "login.cluster.is.localnet", "login1.internal.cluster.is.localnet", "login2.internal.cluster.is.localnet"...
 	pattern = r"^login\d*(?:\.internal)?\.cluster\.is\.localnet$"
+	return bool(re.match(pattern, name.split('@')[-1]))
+
+
+def is_on_cluster(name: str) -> bool:
+	# regex pattern that matches: "g121.internal.cluster.is.localnet", "login.internal.cluster.is.localnet"...
+	pattern = r"^g\d+\.internal\.cluster\.is\.localnet$"
 	return bool(re.match(pattern, name.split('@')[-1]))
 
 
@@ -111,18 +112,12 @@ def launch_llm(cfg: fig.Configuration):
 		args['port'] = port
 	# model_name = args['model']
 
-	# print('command would be:', command)
-	# command = 'echo "Hello world"'
-
 	if launch_on_cluster:
 		terms = argdict2argv({f'--{k}':v for k,v in args.items()})
-		arg_str = ' '.join(shlex.quote(v) if isinstance(v, str) else v
-						   for v in terms)
+		arg_str = ' '.join(shlex.quote(v) if isinstance(v, str) else v for v in terms)
 
 		command = f'fig vllm {arg_str}'
 		resources = settings.get('resources', {})
-
-		# print(command)
 
 		# cfg.push('command', command, silent=True)
 		for k, v in resources.items():
@@ -137,9 +132,149 @@ def launch_llm(cfg: fig.Configuration):
 		return fig.quick_run('vllm', **args)
 
 
+import asyncio
+import httpx
+from rich.live import Live
+from rich.table import Table
+from rich import box
 
-# @fig.script('serving', description='Get information about currently active servers')
+
+def make_serving_table(data, columns):
+	if not isinstance(columns, dict):
+		columns = {col: {} for col in columns}
+	table = Table(title="Server Status", box=box.SIMPLE_HEAVY)
+	for col, style in columns.items():
+		table.add_column(col, **style)
+	# table.add_column("Server", style="cyan", no_wrap=True)
+	# table.add_column("Status", style="bold")
+	def _display(key, val):
+		if isinstance(val, float):
+			return f'{val:.2f}'
+		if key == 'status':
+			return val.upper()
+		return str(val)
+
+	for item in data:
+		table.add_row(*[str(item[col]) for col in columns.keys()])
+	return table
+
+
+def load_serving_log(path, location=None):
+	def compute_status(info):
+		events = info['events']
+		if 'end' in events:
+			return 'ended'
+		if 'error' in events:
+			return 'error'
+		if 'offline' in events:
+			return 'offline'
+		if 'live' in events:
+			return 'live'
+		if 'start' in events:
+			return 'loading'
+		return 'unknown'
+	def compute_startup(info):
+		if 'start' in info['events'] and 'live' not in info['events']:
+			return (info['events']['line'] - info['events']['start']).total_seconds() / 60
+	def compute_duration(info):
+		if 'live' in info['events'] and ('end' in info['events'] or 'error' in info['events']):
+			return (info['events'].get('end', info['events'].get('error')) - info['events']['live']
+					).total_seconds() / 60 / 60
+	def compute_url(info):
+		if 'live' in info['events']:
+			return f"http://{info.get('host', 'localhost')}:{info['port']}"
+	feats = {
+		'status': compute_status,
+		'startup': compute_startup,
+		'duration': compute_duration,
+		'url': compute_url
+	}
+
+	columns = ['event', 'timestamp', 'model', 'host', 'port', 'pid', 'id']
+	props = ['model', 'host', 'port', 'pid', 'id']
+
+	items = {}
+
+	text = load_file(path, loc)
+
+	for line in text.split('\n'):
+		info = {key: val for key, val in zip(columns, line.split('\t'))}
+		if info['id'] not in items:
+			items[info['id']] = {**{key: info[key] for key in props}, 'location': loc, 'events': {}}
+		if info['event'] in items[info['id']]['events']:
+			raise ValueError(f'{info} already exists in {items[info["id"]]}')
+		items[info['id']]['events'][info['event']] = datetime.strptime(info['timestamp'], '%y%m%d-%H%M%S')
+
+	for item in items.values():
+		for k, f in feats.items():
+			item[k] = f(item)
+
+	return items
+
+# async def check_server(url):
+#     try:
+#         async with httpx.AsyncClient(timeout=3.0) as client:
+#             response = await client.get(url)
+#             status_map[url]["code"] = response.status_code
+#             status_map[url]["response_time"] = int(response.elapsed.total_seconds() * 1000)
+#             status_map[url]["status"] = "[green]running" if response.status_code < 500 else "[red]offline"
+#     except Exception:
+#         status_map[url]["status"] = "[red]offline"
+#         status_map[url]["code"] = "-"
+#         status_map[url]["response_time"] = "-"
+
+@fig.script('all-offline', description='Set all servers to offline (declutter serving)')
+def set_all_offline(cfg: fig.Configuration):
+	silent = cfg.pull('silent', False, silent=True)
+	cfg.silent = silent
+
+	logpath = cfg.pull('logpath', '~/vllm.log')
+	locations = cfg.pull('locations', [])
+	if isinstance(locations, list):
+		locations = {loc: logpath for loc in locations}
+	locations[None] = logpath
+
+	now = datetime.now().strftime('%y%m%d-%H%M%S')
+
+	fixes = Counter({loc: 0 for loc in locations})
+
+	for loc, path in locations.items():
+		updates = []
+		for item in load_serving_log(path, loc).values():
+			if item['status'] == 'live':
+				line = ['offline', now, item['model'], item['host'], item['port'], item['pid'], item['id']]
+				updates.append('\t'.join(map(str, line)))
+		if updates:
+			append_to_file('\n'.join(updates) + '\n', path, location=loc)
+			fixes[loc] += len(updates)
+
+	total = sum(fixes.values())
+	print(f'Set {total} entries to offline')
+	print(tabulate([[loc, count] for loc, count in fixes.items() if count > 0], headers=['Location', 'Count']))
+
+
+
+@fig.script('serving', description='Get information about currently active servers')
 def view_serving(cfg: fig.Configuration):
+	silent = cfg.pull('silent', False, silent=True)
+	cfg.silent = silent
+
+	only_active = cfg.pull('only-active', False, silent=True)
+
+	logpath = cfg.pull('logpath', '~/vllm.log')
+	locations = cfg.pull('locations', [])
+	if isinstance(locations, list):
+		locations = {loc: logpath for loc in locations}
+	locations[None] = logpath
+
+	log = []
+	for loc, path in locations.items():
+		log.extend(load_serving_log(path, loc).values())
+
+	if only_active:
+		log = [item for item in log if item['status'] == 'live']
+
+
 	raise NotImplementedError
 
 
@@ -177,6 +312,7 @@ def collect_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
 
 	args = parser.parse_args(argv)
 	return args
+
 
 
 @fig.script('vllm', description='vLLM OpenAI-Compatible RESTful API server')
@@ -393,7 +529,6 @@ def start_vllm_server(cfg: fig.Configuration):
 			sock.close()
 
 	try:
-
 		cli_env_setup()
 		parser = FlexibleArgumentParser(description="vLLM OpenAI-Compatible RESTful API server.")
 		parser = make_arg_parser(parser)

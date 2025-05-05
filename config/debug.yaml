@@ -14,12 +14,20 @@
 
 ##########################
 
-_meta.script_name: launch
+_meta.script_name: serving
+
+locations:
+  - fleeb@login.cluster.is.localnet
+  - fleeb@wagner.is.localnet
+
+##########################
+
+#_meta.script_name: launch
 #
 #_base: [cluster]
 #_base: [llm]
 #
-model: phi4
+#model: phi4
 #bid: 1000
 
 ##########################
