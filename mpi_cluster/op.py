@@ -381,7 +381,8 @@ periodic_hold_subcode = 1''')
 	cfg.print(tabulate(enumerate(commands), headers=['i', 'command']))
 
 	if confirm is None:
-		confirm = cfg.pull('confirm', False, silent=True)
+		confirm = cfg.pull('confirm', False)#, silent=True)
+	print(f'confirm: {confirm}')
 	if not confirm:
 		resp = None
 		while resp is None:
@@ -394,7 +395,7 @@ periodic_hold_subcode = 1''')
 			else:
 				print(f'Invalid response: {resp!r}')
 				resp = None
-	cfg.push('confirm', False, silent=True)
+	# cfg.push('confirm', False, silent=True)
 
 	submission_command = f'condor_submit_bid {bid} {path / "submit.sub"}'
 	out, err = run_command(submission_command, location=location)
