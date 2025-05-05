@@ -255,7 +255,12 @@ def launch_vllm_server(cfg: fig.Configuration):
 		description="vLLM OpenAI-Compatible RESTful API server.")
 	parser = make_arg_parser(parser)
 
-	# print('dests': [])
+	arg_keys = [{'name': action.dest.replace('_', '-'), 'option': action.option_strings[0], 
+			  'default': action.default}
+				for action in parser._actions if action.dest != 'help' and action.option_strings]
+
+	print('dests', [action.dest for action in parser._actions])
+	return
 
 	# parser.set_defaults(**raw_args)
 	args = parser.parse_args(argv)
