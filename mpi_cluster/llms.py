@@ -124,7 +124,7 @@ def launch_llm(cfg: fig.Configuration):
 
 	else:
 
-		return fig.quick_run('vllm', model=model, port=port, **settings)
+		return fig.quick_run('vllm', model=model, port=port, **args)
 
 
 
