@@ -44,6 +44,7 @@ def get_status(cfg: fig.Configuration):
 		raw, _ = run_command(q_command, location=location)
 
 		lines = raw.split('\n')
+		print(lines)
 		active = [parse_job_status(dict(zip(q_status_columns, line.split('\t')))) for line in lines if len(line)]
 
 	now = datetime.now()
@@ -283,6 +284,7 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 		template = f'cd {{working_dir}}\n{{command}}' if working_dir else '{command}'
 
 	# Prepare job name and directory
+	skip_cmds = cfg.pull('skip-cmds', len(commands)>5)
 	rawname = cfg.pull('name', 'job')
 	jobdir = Path(cfg.pull('job-dir', str(misc.default_jobdir())))
 	if location is None:
@@ -290,7 +292,7 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 
 	manifest_path = Path(cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True))
 	rawtext, _ = run_command(f'wc -l {manifest_path}', location=location)
-	num = int(rawtext.split()[0]) if rawtext is not None or len(rawtext) else 0
+	num = int(rawtext.split()[0]) if rawtext is not None and len(rawtext) else 0
 	# num = sum(1 for _ in manifest_path.open('r')) if manifest_path.exists() else 0
 	name = f"{rawname}_{str(num).zfill(3)}"
 	if cfg.pull('include-date', False):
@@ -394,7 +396,7 @@ periodic_hold_subcode = 1''')
 		'date': now.strftime("%y%m%d-%H%M%S"),
 		'bid': bid,
 		'ID': ID,
-		'commands': None if cfg.pull('skip-cmds', len(commands)>5) else commands
+		'commands': None if skip_cmds else commands
 	}
 
 	append_to_file(f'{json.dumps(manifest_entry)}\n', path=manifest_path, location=location)

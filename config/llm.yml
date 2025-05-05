@@ -1,0 +1,10 @@
+
+_base: [cluster]
+
+model: phi4
+
+bid: 1000
+
+env-vars:
+  HF_HOME: /fast/fleeb/huggingface_cache/
+
