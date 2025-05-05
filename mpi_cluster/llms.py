@@ -130,7 +130,7 @@ def launch_llm(cfg: fig.Configuration):
 		for k, v in resources.items():
 			cfg.push(k, v, silent=True)
 
-		return create_jobs(cfg, commands=command, location=location, confirm=True)
+		return create_jobs(cfg, commands=command, location=location, skip_confirm=True)
 
 	else:
 
