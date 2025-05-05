@@ -44,7 +44,6 @@ def get_status(cfg: fig.Configuration):
 		raw, _ = run_command(q_command, location=location)
 
 		lines = raw.split('\n')
-		print(lines)
 		active = [parse_job_status(dict(zip(q_status_columns, line.split('\t')))) for line in lines if len(line)]
 
 	now = datetime.now()
