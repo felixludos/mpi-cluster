@@ -5,7 +5,7 @@
 
 ##########################
 
-_meta.script_name: vllm
+#_meta.script_name: vllm
 
 #_base: [cluster]
 
@@ -14,9 +14,10 @@ _meta.script_name: vllm
 
 ##########################
 
-#_meta.script_name: launch
+_meta.script_name: launch
 #
 #_base: [cluster]
+_base: [llm]
 #
 #model: phi4
 #bid: 1000

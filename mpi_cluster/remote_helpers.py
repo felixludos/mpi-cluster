@@ -115,8 +115,12 @@ def write_to_file(text: str, path: Path, location=None):
 
 
 def append_to_file(text: str, path: Path, location=None):
+	if location is None:
+		with path.open('a') as f:
+			f.write(text)
+		return path
 	run_command(f'"{wrap_string(text)}"', location=location, append_path=wrap_string(str(path)))
-
+	return path
 
 
 _file_cache = misc.repo_root().joinpath('assets', 'file_cache.json')

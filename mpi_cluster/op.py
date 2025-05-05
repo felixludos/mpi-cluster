@@ -204,7 +204,7 @@ STATUS_COLORS = {
 
 _not_set = object()
 @fig.script('submit', description='submit jobs to the cluster')
-def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _not_set, confirm: bool = None):
+def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _not_set, skip_confirm: bool = None):
 	"""
 	Create and submit jobs to a cluster based on the provided configuration.
 
@@ -380,9 +380,9 @@ periodic_hold_subcode = 1''')
 
 	cfg.print(tabulate(enumerate(commands), headers=['i', 'command']))
 
-	if confirm is None:
-		confirm = cfg.pull('confirm', False, silent=True)
-	if not confirm:
+	if skip_confirm is None:
+		skip_confirm = cfg.pull('skip-confirm', False, silent=True)
+	if not skip_confirm:
 		resp = None
 		while resp is None:
 			resp = input(f'Submit {len(commands)} jobs ([y]/n)? ')
@@ -394,7 +394,6 @@ periodic_hold_subcode = 1''')
 			else:
 				print(f'Invalid response: {resp!r}')
 				resp = None
-	cfg.push('confirm', False, silent=True)
 
 	submission_command = f'condor_submit_bid {bid} {path / "submit.sub"}'
 	out, err = run_command(submission_command, location=location)
