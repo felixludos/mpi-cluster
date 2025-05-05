@@ -1,3 +1,5 @@
+import argparse
+from contextlib import asynccontextmanager
 from .imports import *
 from .misc import repo_root
 from .remote_helpers import run_command, append_to_file
@@ -100,13 +102,19 @@ def launch_llm(cfg: fig.Configuration):
 
 	port = cfg.pull('port', 8000)
 
+	args = settings['arguments']
+
 	# print('command would be:', command)
 	# command = 'echo "Hello world"'
 
 	if launch_on_cluster:
 
-		command = f'fig vllm --model {model_name} --port {port} {settings["command"]}'.format(vllm_dir=vllm_dir)
+		arg_str = ' '.join(shlex.quote(v) if isinstance(v, str) else v for v in argdict2argv(args))
+
+		command = f'fig vllm --model {model_name} --port {port} {arg_str}'.format(vllm_dir=vllm_dir)
 		resources = settings['resources']
+
+		print(command)
 
 		# cfg.push('command', command, silent=True)
 		for k, v in resources.items():
@@ -114,7 +122,9 @@ def launch_llm(cfg: fig.Configuration):
 
 		return create_jobs(cfg, commands=command, location=location, confirm=True)
 
-	pass
+	else:
+
+		return fig.quick_run('vllm', model=model, port=port, **settings)
 
 
 
@@ -124,25 +134,38 @@ def view_serving(cfg: fig.Configuration):
 
 
 
-def collect_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
-
+def argdict2argv(args: Dict[str, Any]) -> List[str]:
 	argv = []
-	for k, v in raw_args.items():
+	for k, v in args.items():
 		if k.startswith('_'):
 			continue
-
 		if isinstance(v, str):
 			v = shlex.quote(v)
-			# v = f'"{v.replace("\\", "\\\\").replace("\"", "\\\"")}"'
 		if isinstance(v, bool):
 			if v:
-				argv.append(f"--{k}")
+				argv.append(f"{k}")
 		else:
-			argv.append(f"--{k}={v}")
+			argv.append(f"{k}={v}")
+	return argv
+
+
+
+def collect_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
+	arginfo = [{'name': action.dest.replace('_', '-'), 'option': action.option_strings[0],
+				'default': action.default}
+			   for action in parser._actions if action.dest != 'help' and action.option_strings]
+	rawargs = {}
+
+	for info in arginfo:
+		value = cfg.pull(info['name'], info['default'], silent=True)
+		if value is not argparse.SUPPRESS:
+			rawargs[info['option']] = value
+
+	argv = argdict2argv(rawargs)
 
 	args = parser.parse_args(argv)
-
 	return args
+
 
 
 @fig.script('vllm', description='vLLM OpenAI-Compatible RESTful API server')
@@ -165,19 +188,108 @@ def start_vllm_server(cfg: fig.Configuration):
 	logpath = cfg.pull('logpath', '~/vllm.log')
 	logpath = Path(logpath).expanduser().resolve().absolute()
 
-	jobid = os.environ.get('JOB_ID', '-')
+	jobid = os.environ.get('JOB_ID', '--')
+	pid = os.getpid()
 
-	# log server launch with columns: [event, timestamp, model, host, port, jobid]
-	launch_message = ['start', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, jobid]
+	# log server launch with columns: [event, timestamp, model, host, port, pid, jobid]
+	launch_message = ['start', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
 	with logpath.open('a') as f:
 		f.write('\t'.join(map(str, launch_message)) + '\n')
 
 	import threading
 	from vllm.entrypoints.openai.api_server import logger, VLLM_VERSION, \
-		build_app, build_async_engine_client, init_app_state, validate_parsed_serve_args, \
+		build_async_engine_client, init_app_state, validate_parsed_serve_args, \
 		serve_http, create_server_socket, set_ulimit, TIMEOUT_KEEP_ALIVE, ToolParserManager, \
 		ReasoningParserManager, FlexibleArgumentParser, make_arg_parser, \
-		is_valid_ipv6_address, cli_env_setup, signal, os, uvloop
+		is_valid_ipv6_address, cli_env_setup, signal, os, uvloop, lifespan, inspect, FastAPI, \
+		mount_metrics, CORSMiddleware, RequestValidationError, ErrorResponse, JSONResponse, \
+		Request, importlib, uuid
+	# build_app
+
+	print(f'flag1: {datetime.now().strftime("%y%m%d-%H%M%S")}')
+	@asynccontextmanager
+	async def time_lifespand(app):
+		"""Lifespan context manager for the app."""
+
+		print(f'flag2: {datetime.now().strftime("%y%m%d-%H%M%S")}')
+
+		async with lifespan(app):
+			print(f'flag3: {datetime.now().strftime("%y%m%d-%H%M%S")}')
+			yield
+			print(f'flag5: {datetime.now().strftime("%y%m%d-%H%M%S")}')
+
+		print(f'flag6: {datetime.now().strftime("%y%m%d-%H%M%S")}')
+
+	def build_app(args: Namespace) -> FastAPI:
+		if args.disable_fastapi_docs:
+			app = FastAPI(openapi_url=None,
+						  docs_url=None,
+						  redoc_url=None,
+						  lifespan=lifespan)
+		else:
+			app = FastAPI(lifespan=lifespan)
+		app.include_router(router)
+		app.root_path = args.root_path
+
+		mount_metrics(app)
+
+		app.add_middleware(
+			CORSMiddleware,
+			allow_origins=args.allowed_origins,
+			allow_credentials=args.allow_credentials,
+			allow_methods=args.allowed_methods,
+			allow_headers=args.allowed_headers,
+		)
+
+		@app.exception_handler(RequestValidationError)
+		async def validation_exception_handler(_, exc):
+			err = ErrorResponse(message=str(exc),
+								type="BadRequestError",
+								code=HTTPStatus.BAD_REQUEST)
+			return JSONResponse(err.model_dump(),
+								status_code=HTTPStatus.BAD_REQUEST)
+
+		if token := envs.VLLM_API_KEY or args.api_key:
+
+			@app.middleware("http")
+			async def authentication(request: Request, call_next):
+				if request.method == "OPTIONS":
+					return await call_next(request)
+				url_path = request.url.path
+				if app.root_path and url_path.startswith(app.root_path):
+					url_path = url_path[len(app.root_path):]
+				if not url_path.startswith("/v1"):
+					return await call_next(request)
+				if request.headers.get("Authorization") != "Bearer " + token:
+					return JSONResponse(content={"error": "Unauthorized"},
+										status_code=401)
+				return await call_next(request)
+
+		if args.enable_request_id_headers:
+			logger.warning(
+				"CAUTION: Enabling X-Request-Id headers in the API Server. "
+				"This can harm performance at high QPS.")
+
+			@app.middleware("http")
+			async def add_request_id(request: Request, call_next):
+				request_id = request.headers.get(
+					"X-Request-Id") or uuid.uuid4().hex
+				response = await call_next(request)
+				response.headers["X-Request-Id"] = request_id
+				return response
+
+		for middleware in args.middleware:
+			module_path, object_name = middleware.rsplit(".", 1)
+			imported = getattr(importlib.import_module(module_path), object_name)
+			if inspect.isclass(imported):
+				app.add_middleware(imported)  # type: ignore[arg-type]
+			elif inspect.iscoroutinefunction(imported):
+				app.middleware("http")(imported)
+			else:
+				raise ValueError(f"Invalid middleware {middleware}. "
+								 f"Must be a function or a class.")
+
+		return app
 
 	async def run_server(args, **uvicorn_kwargs) -> None:
 		logger.info("vLLM API server version %s", VLLM_VERSION)
@@ -222,11 +334,10 @@ def start_vllm_server(cfg: fig.Configuration):
 			async def shutdown():
 				"""Gracefully stop Uvicorn and the engine."""
 				def _stop():
-					print("Shutting down vLLM …")
+					print("Received shutdown request …")
 					os.kill(os.getpid(), signal.SIGINT)   # lets Uvicorn close cleanly
 				threading.Thread(target=_stop).start()
-				return {"message": "Server is shutting down..."}
-
+				return 'Shutting down server.'
 
 			vllm_config = await engine_client.get_vllm_config()
 			await init_app_state(engine_client, vllm_config, app.state, args)
@@ -266,8 +377,7 @@ def start_vllm_server(cfg: fig.Configuration):
 			sock.close()
 
 	cli_env_setup()
-	parser = FlexibleArgumentParser(
-		description="vLLM OpenAI-Compatible RESTful API server.")
+	parser = FlexibleArgumentParser(description="vLLM OpenAI-Compatible RESTful API server.")
 	parser = make_arg_parser(parser)
 
 	args = collect_vllm_args(cfg, parser)
@@ -276,10 +386,14 @@ def start_vllm_server(cfg: fig.Configuration):
 
 	validate_parsed_serve_args(args)
 
+	print(f'flag7: {datetime.now().strftime("%y%m%d-%H%M%S")}')
+
 	uvloop.run(run_server(args))
 
+	print(f'flag8: {datetime.now().strftime("%y%m%d-%H%M%S")}')
+
 	# log server shutdown
-	end_message = ['end', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, jobid]
+	end_message = ['end', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
 	with logpath.open('a') as f:
 		f.write('\t'.join(map(str, end_message)) + '\n')
 
