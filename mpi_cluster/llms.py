@@ -212,7 +212,7 @@ def start_vllm_server(cfg: fig.Configuration):
 		ReasoningParserManager, FlexibleArgumentParser, make_arg_parser, \
 		is_valid_ipv6_address, cli_env_setup, signal, os, uvloop, lifespan, inspect, FastAPI, \
 		mount_metrics, CORSMiddleware, RequestValidationError, ErrorResponse, JSONResponse, \
-		Request, importlib, uuid
+		Request, importlib, uuid, Namespace
 	# build_app
 
 	print(f'flag1: {datetime.now().strftime("%y%m%d-%H%M%S")}')
