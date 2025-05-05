@@ -104,7 +104,7 @@ def launch_llm(cfg: fig.Configuration):
 
 	port = cfg.pull('port', None)
 
-	args = settings['arguments']
+	args = settings
 	args.update({k: v.format(vllm_dir=vllm_dir) for k, v in args.items() if isinstance(v, str)})
 
 	if port is not None:
@@ -120,7 +120,7 @@ def launch_llm(cfg: fig.Configuration):
 						   for v in terms)
 
 		command = f'fig vllm {arg_str}'
-		resources = settings['resources']
+		resources = settings.get('resources', {})
 
 		# print(command)
 
