@@ -13,12 +13,9 @@ def is_cluster(name: str) -> bool:
 
 	on the MPI cluster the name will be login1.internal.cluster.is.localnet
 	"""
-	# regex pattern that matches:
-	# - login.cluster.is.localnet
-	# - login1.internal.cluster.is.localnet
-	# - login3.internal.cluster.is.localnet
-	pattern = r'^(login\d*|login)\.internal\.cluster\.is\.localnet$'
-	return bool(re.match(pattern, name))
+	# regex pattern that matches: "login.cluster.is.localnet", "login1.internal.cluster.is.localnet", "login2.internal.cluster.is.localnet"...
+	pattern = r"^login\d*(?:\.internal)?\.cluster\.is\.localnet$"
+	return bool(re.match(pattern, name.split('@')[-1]))
 
 
 
@@ -117,14 +114,14 @@ def launch_llm(cfg: fig.Configuration):
 	# command = 'echo "Hello world"'
 
 	if launch_on_cluster:
-
+		terms = argdict2argv({f'--{k}':v for k,v in args.items()})
 		arg_str = ' '.join(shlex.quote(v) if isinstance(v, str) else v
-						   for v in argdict2argv({f'--{k}':v for k,v in args.items()}))
+						   for v in terms)
 
 		command = f'fig vllm {arg_str}'.format(vllm_dir=vllm_dir)
 		resources = settings['resources']
 
-		print(command)
+		# print(command)
 
 		# cfg.push('command', command, silent=True)
 		for k, v in resources.items():
@@ -134,7 +131,7 @@ def launch_llm(cfg: fig.Configuration):
 
 	else:
 
-		return fig.quick_run('vllm', model=model, port=port, **args)
+		return fig.quick_run('vllm', **args)
 
 
 
@@ -155,7 +152,8 @@ def argdict2argv(args: Dict[str, Any]) -> List[str]:
 			if v:
 				argv.append(f"{k}")
 		else:
-			argv.append(f"{k} {v}")
+			argv.append(k)
+			argv.append(str(v))
 	return argv
 
 
@@ -176,7 +174,6 @@ def collect_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
 	args = parser.parse_args(argv)
 	return args
 
-import os
 
 @fig.script('vllm', description='vLLM OpenAI-Compatible RESTful API server')
 def start_vllm_server(cfg: fig.Configuration):
@@ -197,6 +194,8 @@ def start_vllm_server(cfg: fig.Configuration):
 
 	logpath = cfg.pull('logpath', '~/vllm.log')
 	logpath = Path(logpath).expanduser().resolve().absolute()
+
+	import os
 
 	jobid = os.environ.get('JOB_ID', '--')
 	pid = os.getpid()
