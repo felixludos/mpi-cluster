@@ -17,9 +17,9 @@
 _meta.script_name: launch
 #
 #_base: [cluster]
-_base: [llm]
+#_base: [llm]
 #
-#model: phi4
+model: phi4
 #bid: 1000
 
 ##########################

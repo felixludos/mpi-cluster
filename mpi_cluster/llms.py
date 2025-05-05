@@ -164,9 +164,10 @@ def collect_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
 			   for action in parser._actions if action.dest != 'help' and action.option_strings]
 	rawargs = {}
 
+	empty = object()
 	for info in arginfo:
-		value = cfg.pull(info['name'], info['default'], silent=True)
-		if value is not argparse.SUPPRESS:
+		value = cfg.pull(info['name'], empty, silent=True)
+		if value is not argparse.SUPPRESS and value is not empty:
 			rawargs[info['option']] = value
 
 	argv = argdict2argv(rawargs)
@@ -195,10 +196,14 @@ def start_vllm_server(cfg: fig.Configuration):
 	logpath = cfg.pull('logpath', '~/vllm.log')
 	logpath = Path(logpath).expanduser().resolve().absolute()
 
+	import secrets
 	import os
 
-	jobid = os.environ.get('JOB_ID', '--')
+	jobid = os.environ.get('JOB_ID', secrets.token_hex(4))
+	print(f'Job ID: {jobid}')
 	pid = os.getpid()
+
+	# begin startup
 
 	# log server launch with columns: [event, timestamp, model, host, port, pid, jobid]
 	launch_message = ['start', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
@@ -212,31 +217,30 @@ def start_vllm_server(cfg: fig.Configuration):
 		ReasoningParserManager, FlexibleArgumentParser, make_arg_parser, \
 		is_valid_ipv6_address, cli_env_setup, signal, os, uvloop, lifespan, inspect, FastAPI, \
 		mount_metrics, CORSMiddleware, RequestValidationError, ErrorResponse, JSONResponse, \
-		Request, importlib, uuid, Namespace
-	# build_app
+		Request, importlib, uuid, Namespace, router, envs
 
-	print(f'flag1: {datetime.now().strftime("%y%m%d-%H%M%S")}')
 	@asynccontextmanager
 	async def time_lifespand(app):
 		"""Lifespan context manager for the app."""
-
-		print(f'flag2: {datetime.now().strftime("%y%m%d-%H%M%S")}')
-
 		async with lifespan(app):
-			print(f'flag3: {datetime.now().strftime("%y%m%d-%H%M%S")}')
+			# startup complete
+			live_message = ['live', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
+			with logpath.open('a') as f:
+				f.write('\t'.join(map(str, live_message)) + '\n')
 			yield
-			print(f'flag5: {datetime.now().strftime("%y%m%d-%H%M%S")}')
-
-		print(f'flag6: {datetime.now().strftime("%y%m%d-%H%M%S")}')
+			# shutdown starting
+			# shutdown_message = ['shutdown', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
+			# with logpath.open('a') as f:
+			# 	f.write('\t'.join(map(str, shutdown_message)) + '\n')
 
 	def build_app(args: Namespace) -> FastAPI:
 		if args.disable_fastapi_docs:
 			app = FastAPI(openapi_url=None,
 						  docs_url=None,
 						  redoc_url=None,
-						  lifespan=lifespan)
+						  lifespan=time_lifespand)
 		else:
-			app = FastAPI(lifespan=lifespan)
+			app = FastAPI(lifespan=time_lifespand)
 		app.include_router(router)
 		app.root_path = args.root_path
 
@@ -395,11 +399,9 @@ def start_vllm_server(cfg: fig.Configuration):
 
 	validate_parsed_serve_args(args)
 
-	print(f'flag7: {datetime.now().strftime("%y%m%d-%H%M%S")}')
-
 	uvloop.run(run_server(args))
 
-	print(f'flag8: {datetime.now().strftime("%y%m%d-%H%M%S")}')
+	# shutdown complete
 
 	# log server shutdown
 	end_message = ['end', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
