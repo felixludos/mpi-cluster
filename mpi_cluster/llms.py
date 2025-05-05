@@ -129,6 +129,9 @@ def launch_llm(cfg: fig.Configuration):
 
 		return create_jobs(cfg, commands=command, location=location)
 
+	elif location is not None:
+		raise NotImplementedError
+
 	else:
 
 		return fig.quick_run('vllm', **args)
