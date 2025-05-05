@@ -1,6 +1,6 @@
 from .imports import *
 from .misc import repo_root
-from .remote_helpers import run_command
+from .remote_helpers import run_command, append_to_file
 from .op import create_jobs
 
 
@@ -10,7 +10,7 @@ def is_cluster(name: str) -> bool:
 
 	on the MPI cluster the name will be login1.internal.cluster.is.localnet
 	"""
-	return name.endswith("cluster.is.localnet")
+	return name.endswith("login.cluster.is.localnet")
 
 
 
@@ -100,19 +100,21 @@ def launch_llm(cfg: fig.Configuration):
 
 	port = cfg.pull('port', 8000)
 
-	command = f'fig vllm --model {model_name} --port {port} {settings["command"]}'.format(vllm_dir=vllm_dir)
-	resources = settings['resources']
-
-	# cfg.push('command', command, silent=True)
-	for k, v in resources.items():
-		cfg.push(k, v, silent=True)
-
 	# print('command would be:', command)
 	# command = 'echo "Hello world"'
 
+	if launch_on_cluster:
 
+		command = f'fig vllm --model {model_name} --port {port} {settings["command"]}'.format(vllm_dir=vllm_dir)
+		resources = settings['resources']
 
-	return create_jobs(cfg, commands=command, location=location, confirm=True)
+		# cfg.push('command', command, silent=True)
+		for k, v in resources.items():
+			cfg.push(k, v, silent=True)
+
+		return create_jobs(cfg, commands=command, location=location, confirm=True)
+
+	pass
 
 
 
@@ -122,23 +124,7 @@ def view_serving(cfg: fig.Configuration):
 
 
 
-
-@fig.script('vllm', description='vLLM OpenAI-Compatible RESTful API server')
-def launch_vllm_server(cfg: fig.Configuration):
-	"""
-	Launch a vLLM server through the cluster.
-
-	Args:
-		cfg (fig.Configuration): The configuration object.
-
-	Returns:
-		None
-	"""
-
-	#
-
-	import shlex
-	raw_args = cfg.pull(silent=True)
+def collect_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
 
 	argv = []
 	for k, v in raw_args.items():
@@ -154,8 +140,37 @@ def launch_vllm_server(cfg: fig.Configuration):
 		else:
 			argv.append(f"--{k}={v}")
 
-	# print(argv)
-	print(' '.join(argv))
+	args = parser.parse_args(argv)
+
+	return args
+
+
+@fig.script('vllm', description='vLLM OpenAI-Compatible RESTful API server')
+def start_vllm_server(cfg: fig.Configuration):
+	"""
+	Launch a vLLM server through the cluster.
+
+	Args:
+		cfg (fig.Configuration): The configuration object.
+
+	Returns:
+		None
+	"""
+
+	host = socket.getfqdn()
+
+	model = cfg.pull('model')
+	port = cfg.pull('port', 8000)
+
+	logpath = cfg.pull('logpath', '~/vllm.log')
+	logpath = Path(logpath).expanduser().resolve().absolute()
+
+	jobid = os.environ.get('JOB_ID', '-')
+
+	# log server launch with columns: [event, timestamp, model, host, port, jobid]
+	launch_message = ['start', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, jobid]
+	with logpath.open('a') as f:
+		f.write('\t'.join(map(str, launch_message)) + '\n')
 
 	import threading
 	from vllm.entrypoints.openai.api_server import logger, VLLM_VERSION, \
@@ -255,15 +270,18 @@ def launch_vllm_server(cfg: fig.Configuration):
 		description="vLLM OpenAI-Compatible RESTful API server.")
 	parser = make_arg_parser(parser)
 
-	# print('dests': [])
-
-	# parser.set_defaults(**raw_args)
-	args = parser.parse_args(argv)
-
+	args = collect_vllm_args(cfg, parser)
+	# args = parser.parse_args(argv)
 	# args = parser.parse_args()
+
 	validate_parsed_serve_args(args)
 
 	uvloop.run(run_server(args))
+
+	# log server shutdown
+	end_message = ['end', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, jobid]
+	with logpath.open('a') as f:
+		f.write('\t'.join(map(str, end_message)) + '\n')
 
 
 

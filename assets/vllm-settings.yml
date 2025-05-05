@@ -2,6 +2,13 @@
 phi4:
   model: microsoft/Phi-4-multimodal-instruct
   command: "--dtype bfloat16 --gpu-memory-utilization 0.95 --trust-remote-code --max-model-len 65536 --max-num-seqs 4"
+  arguments:
+    model: microsoft/Phi-4-multimodal-instruct
+    dtype: bfloat16
+    gpu-memory-utilization: 0.95
+    trust-remote-code: yes
+    max-model-len: 65536
+    max-num-seqs: 4
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
 
 qwen-8b:

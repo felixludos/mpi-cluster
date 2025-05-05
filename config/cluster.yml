@@ -1,6 +1,7 @@
 
 _base: [me]
 
-job-dir: /home/fleeb/.cluster_jobs
+#job-dir: /home/fleeb/.cluster_jobs
+job-dir: /home/fleeb/jobdir
 
 host: login.cluster.is.localnet
