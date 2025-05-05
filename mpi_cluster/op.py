@@ -76,7 +76,7 @@ def get_status(cfg: fig.Configuration):
 
 		for entry in manifest:
 			jnum = entry['ID']
-			for i, cmd in enumerate(entry.get('commands', [None] * entry['procs'])):
+			for i, cmd in enumerate(entry.get('commands') or [None] * entry['procs']):
 				ID = f'{jnum}.{i}'
 				if ID not in jobs:
 					jobs[ID] = {'ID': ID}
@@ -347,18 +347,10 @@ periodic_hold_subcode = 1''')
 
 	# Write job scripts and submission file
 	for i, job in enumerate(jobs):
-		# path.joinpath(f'job-{i}.sh').write_text(job)
 		write_to_file(job, path=path / f'job-{i}.sh', location=location)
-		# out, err = run_command(f'echo "{wrap_string(job)}" > {path.joinpath(f"job-{i}.sh")}', location=location)
-		# print(out)
-		# print(err)
-		# if len(err):
-		# 	cfg.print(f'WARNING: Failed to write job script {i}:\n{err}')
-		# 	return
-	# path.joinpath('submit.sub').write_text('\n'.join(sub))
+
 	full_sub = "\n".join(sub)
 	write_to_file(full_sub, path=path.joinpath("submit.sub"), location=location)
-	# run_command(f'echo "{wrap_string(full_sub)}" > {path.joinpath("submit.sub")}', location=location)
 
 	# Submit jobs
 	bid = cfg.pull('bid', None)
@@ -402,33 +394,14 @@ periodic_hold_subcode = 1''')
 		'date': now.strftime("%y%m%d-%H%M%S"),
 		'bid': bid,
 		'ID': ID,
-		'commands': commands if cfg.pull('include-cmds', False) else None
+		'commands': None if cfg.pull('skip-cmds', len(commands)>5) else commands
 	}
 
 	append_to_file(f'{json.dumps(manifest_entry)}\n', path=manifest_path, location=location)
 
-	# escaped = shlex.quote(json.dumps(manifest_entry))
-	# print(escaped)
-	# out, err = run_command(
-	# f'printf %s\\n {escaped} >> {manifest_path}', location=location
-	# 	# f'echo -e "{wrap_string(json.dumps(manifest_entry))}\\n" >> {manifest_path}', location=location
-	# )
-
-	# f'cat >> {manifest_path} << EOF\n{json.dumps(manifest_entry)}\nEOF', location=location
-
-	# out, err = run_command(
-	# 	f'echo -e "{wrap_string(json.dumps(manifest_entry))}\\n" >> {manifest_path}', location=location)
-	# print(f'Output: {out}')
-	# print(f'Error: {err}')
-	# with manifest_path.open('a') as f:
-	# 	f.write(f'{json.dumps(manifest_entry)}\n')
-
 	cfg.print(f'Job {name} submitted: {bid}')
 	return name
 
-
-
-# echo -e "{\"name\": \"job_054\", \"job-num\": 54, \"procs\": 1, \"path\": \"/home/fleeb/.cluster_jobs/job_054\", \"date\": \"250505-002609\", \"bid\": 1000, \"ID\": \"16166937.\", \"commands\": null}\n" >> /home/fleeb/.cluster_jobs/manifest.jsonl
 
 
 

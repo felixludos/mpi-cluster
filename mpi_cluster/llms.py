@@ -107,8 +107,8 @@ def launch_llm(cfg: fig.Configuration):
 	for k, v in resources.items():
 		cfg.push(k, v, silent=True)
 
-	print('command would be:', command)
-	command = 'echo "Hello world"'
+	# print('command would be:', command)
+	# command = 'echo "Hello world"'
 
 	return create_jobs(cfg, commands=command, location=location, confirm=True)
 

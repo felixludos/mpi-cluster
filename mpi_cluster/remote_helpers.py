@@ -21,9 +21,6 @@ def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__e
 			f.write(command)
 		return
 
-	# output_prefix = cfg.pull('output-prefix', '__output_tag_code__')
-	# error_prefix = cfg.pull('error-prefix', '__error_tag_code__')
-	# command = cfg.pull('command', None)
 	result = subprocess.run(command, shell=True, capture_output=True, text=True)
 	raw = result.stdout
 	if len(raw) > 0:
@@ -34,11 +31,6 @@ def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__e
 	if len(raw) > 0:
 		error = error_prefix + raw.replace('\n', f'\n{error_prefix}')
 		print(error)
-
-	# sys.stdout.write(output)
-	# sys.stdout.flush()
-	# sys.stderr.write(error)
-	# sys.stderr.flush()
 
 	sys.stdout.flush()
 
