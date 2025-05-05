@@ -183,9 +183,10 @@ def sort_jobkeys(cfg, jobs):
 
 
 def parse_jobexec(raw, info): # processes the job name/path -> remove
-	*root, jdir, jexe = raw.split('/')
+	if '/' in raw:
+		*root, jdir, jexe = raw.split('/')
 
-	info['name'] = jdir
+		info['name'] = jdir
 
 	return info
 
