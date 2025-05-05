@@ -1,5 +1,5 @@
 import argparse
-import os
+import os, re
 from contextlib import asynccontextmanager
 from .imports import *
 from .misc import repo_root
@@ -13,7 +13,12 @@ def is_cluster(name: str) -> bool:
 
 	on the MPI cluster the name will be login1.internal.cluster.is.localnet
 	"""
-	return name.endswith("login.cluster.is.localnet")
+	# regex pattern that matches:
+	# - login.cluster.is.localnet
+	# - login1.internal.cluster.is.localnet
+	# - login3.internal.cluster.is.localnet
+	pattern = r'^(login\d*|login)\.internal\.cluster\.is\.localnet$'
+	return bool(re.match(pattern, name))
 
 
 
