@@ -1,4 +1,5 @@
 import argparse
+import os
 from contextlib import asynccontextmanager
 from .imports import *
 from .misc import repo_root
@@ -44,7 +45,8 @@ def launch_llm(cfg: fig.Configuration):
 	launch_location = full_me if location is None else location
 	launch_on_cluster = is_cluster(launch_location)
 
-	_local_msg = 'launching locally' if host is None else 'launch as job' if is_cluster(host) else f'launch on {host}'
+	_local_msg = 'launching locally' if host is None else 'launch as job on cluster' \
+		if is_cluster(host) else f'launch on {host}'
 	print(f'Currently on {me} - {_local_msg}')
 
 	gpu_devices = get_gpu_info(location)
@@ -98,20 +100,23 @@ def launch_llm(cfg: fig.Configuration):
 	if settings is None:
 		raise KeyError(f'no such model settings found {model}')
 
-	model_name = settings['model']
 
-	port = cfg.pull('port', 8000)
+	port = cfg.pull('port', None)
 
 	args = settings['arguments']
+	if port is not None:
+		args['port'] = port
+	model_name = args['model']
 
 	# print('command would be:', command)
 	# command = 'echo "Hello world"'
 
 	if launch_on_cluster:
 
-		arg_str = ' '.join(shlex.quote(v) if isinstance(v, str) else v for v in argdict2argv(args))
+		arg_str = ' '.join(shlex.quote(v) if isinstance(v, str) else v
+						   for v in argdict2argv({f'--{k}':v for k,v in args.items()}))
 
-		command = f'fig vllm --model {model_name} --port {port} {arg_str}'.format(vllm_dir=vllm_dir)
+		command = f'fig vllm {arg_str}'.format(vllm_dir=vllm_dir)
 		resources = settings['resources']
 
 		print(command)
@@ -145,7 +150,7 @@ def argdict2argv(args: Dict[str, Any]) -> List[str]:
 			if v:
 				argv.append(f"{k}")
 		else:
-			argv.append(f"{k}={v}")
+			argv.append(f"{k} {v}")
 	return argv
 
 
@@ -166,7 +171,7 @@ def collect_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
 	args = parser.parse_args(argv)
 	return args
 
-
+import os
 
 @fig.script('vllm', description='vLLM OpenAI-Compatible RESTful API server')
 def start_vllm_server(cfg: fig.Configuration):
