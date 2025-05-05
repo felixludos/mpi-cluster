@@ -102,13 +102,14 @@ def launch_llm(cfg: fig.Configuration):
 	if settings is None:
 		raise KeyError(f'no such model settings found {model}')
 
-
 	port = cfg.pull('port', None)
 
 	args = settings['arguments']
+	args.update({k: v.format(vllm_dir=vllm_dir) for k, v in args.items() if isinstance(v, str)})
+
 	if port is not None:
 		args['port'] = port
-	model_name = args['model']
+	# model_name = args['model']
 
 	# print('command would be:', command)
 	# command = 'echo "Hello world"'
@@ -118,7 +119,7 @@ def launch_llm(cfg: fig.Configuration):
 		arg_str = ' '.join(shlex.quote(v) if isinstance(v, str) else v
 						   for v in terms)
 
-		command = f'fig vllm {arg_str}'.format(vllm_dir=vllm_dir)
+		command = f'fig vllm {arg_str}'
 		resources = settings['resources']
 
 		# print(command)
@@ -391,17 +392,27 @@ def start_vllm_server(cfg: fig.Configuration):
 		finally:
 			sock.close()
 
-	cli_env_setup()
-	parser = FlexibleArgumentParser(description="vLLM OpenAI-Compatible RESTful API server.")
-	parser = make_arg_parser(parser)
+	try:
 
-	args = collect_vllm_args(cfg, parser)
-	# args = parser.parse_args(argv)
-	# args = parser.parse_args()
+		cli_env_setup()
+		parser = FlexibleArgumentParser(description="vLLM OpenAI-Compatible RESTful API server.")
+		parser = make_arg_parser(parser)
 
-	validate_parsed_serve_args(args)
+		args = collect_vllm_args(cfg, parser)
+		# args = parser.parse_args(argv)
+		# args = parser.parse_args()
 
-	uvloop.run(run_server(args))
+		validate_parsed_serve_args(args)
+
+		uvloop.run(run_server(args))
+
+	except KeyboardInterrupt:
+		pass
+	except Exception as e:
+		err_message = ['error', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
+		with logpath.open('a') as f:
+			f.write('\t'.join(map(str, err_message)) + '\n')
+		raise e
 
 	# shutdown complete
 
