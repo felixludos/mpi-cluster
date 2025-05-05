@@ -3,7 +3,7 @@ import sys
 
 from .imports import *
 from . import misc
-from .cluster import SUBMISSION_FORMAT
+from .cluster import SUBMISSION_FORMAT, GPU_NAMES
 from .status_helpers import parse_job_status, compute_durations, sort_jobkeys, process_data_table
 from .remote_helpers import run_command, load_file, wrap_string, write_to_file, append_to_file
 
@@ -346,8 +346,46 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 	sub.append(f'request_memory = {cfg.pulls("ram", "mem", default=1) * 1024}')
 	sub.append(f'request_cpus = {cfg.pull("cpu", 1)}')
 
+	reqs = []
 	if cfg.pull('gpu', 0) > 0:
 		sub.append(f'request_gpus = {cfg.pull("gpu", 0)}')
+
+		gpu_mem = cfg.pulls('gpu-mem', 'gpu-ram', 'gpu-memory', default=None)
+		if gpu_mem is not None:
+			reqs.append(f'CUDAGlobalMemoryMb >= {gpu_mem*1024}')
+
+		gpu_names = cfg.pulls('gpu-names', 'gpu-name', default=None)
+		if gpu_names is not None:
+			if isinstance(gpu_names, dict):
+				gpu_names = list(gpu_names)
+			if isinstance(gpu_names, str):
+				gpu_names = gpu_names.split('|')
+			if not isinstance(gpu_names, (tuple, list)):
+				gpu_names = gpu_names,
+
+			gpu_names = list(map(str, gpu_names))
+
+			gnames = []
+			for gname in gpu_names:
+				if gname in GPU_NAMES:
+					gnames.append(GPU_NAMES[gname])
+				else:
+					# raise ValueError(f'Failed to recognize gpu name: {gname} (see source file for list)')
+					cfg.print(f'WARNING: Failed to recognize gpu name: {gname} (see source file for list)')
+
+			if len(gnames):
+				reqs.append(' || '.join(f'CUDADeviceName == \"{gname}\"' for gname in gnames))
+				cfg.print('Requiring GPUs: {}'.format(' or '.join(gnames)))
+
+	avoid = cfg.pull('avoid', None)
+	if avoid is not None and len(avoid):
+		if isinstance(avoid, str):
+			avoid = avoid.split('|')
+		reqs.extend(f'Target.Machine != "{node}.internal.cluster.is.localnet"' for node in avoid)
+		cfg.print(f'Avoiding: {avoid}')
+
+	if len(reqs):
+		sub.append('requirements = {}'.format(' && '.join(f'({r})' for r in reqs)))
 
 	sub.append('''on_exit_hold = (ExitCode =?= 3)
 on_exit_hold_reason = "Checkpointed, will resume"
