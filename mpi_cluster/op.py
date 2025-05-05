@@ -29,7 +29,7 @@ def get_status(cfg: fig.Configuration):
 
 	cols = cfg.pull('columns', ['status', 'name', 'ID', 'host', 'start', 'duration', 'wait', 'end', 'run'])
 
-	pkl_name = cfg.pull('pickle-status', None)
+	# pkl_name = cfg.pull('pickle-status', None)
 
 	active_only = cfg.pull('only-active', False)
 
@@ -180,12 +180,12 @@ def get_status(cfg: fig.Configuration):
 			cfg.print(f)
 		cfg.print()
 
-	if pkl_name is not None:
-		if '.p' not in pkl_name:
-			pkl_name = f'{pkl_name}.p'
-		with open(pkl_name, 'w') as f:
-			pickle.dump({'jobs': jobs, 'failed': failed}, f)
-		cfg.print(f'Pickled status to: {pkl_name}')
+	# if pkl_name is not None:
+	# 	if '.p' not in pkl_name:
+	# 		pkl_name = f'{pkl_name}.p'
+	# 	with open(pkl_name, 'w') as f:
+	# 		pickle.dump({'jobs': jobs, 'failed': failed}, f)
+	# 	cfg.print(f'Pickled status to: {pkl_name}')
 
 	return active
 
@@ -391,6 +391,20 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 on_exit_hold_reason = "Checkpointed, will resume"
 on_exit_hold_subcode = 2
 periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReasonSubCode =?= 1) || (HoldReasonSubCode =?= 2)) )''')
+
+	max_running_price = cfg.pull("max-running-price", None)
+	if max_running_price is not None:
+		running_price_exceeded_action = cfg.pull("running-price-exceeded-action", "kill")
+		sub.append(f"+MaxRunningPrice = {max_running_price}")
+		if running_price_exceeded_action == "kill":
+			cfg.print(f"Job will be killed if running price exceeds {max_running_price}")
+		elif running_price_exceeded_action == "restart":
+			cfg.print(f"Job will be restarted if running price exceeds {max_running_price}")
+		else:
+			cfg.print(f"Unknown running price exceeded action {running_price_exceeded_action}")
+			running_price_exceeded_action = "kill"
+			cfg.print(f"Job will be killed if running price exceeds {max_running_price}")
+		sub.append(f'+RunningPriceExceededAction = "{running_price_exceeded_action}"')
 
 	time_limit = cfg.pull('time-limit', None)
 	if time_limit:
