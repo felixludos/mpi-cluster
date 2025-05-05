@@ -134,7 +134,7 @@ def load_file(path: Path, location: str = None) -> str:
 			text = path.read_text()
 	else:
 		command = f'cat {path}'.replace('\\', '/')
-		text = run_command(command, location=location)
+		text, _ = run_command(command, location=location)
 
 	if text is None:
 		raise FileNotFoundError(f'File not found: {path}')

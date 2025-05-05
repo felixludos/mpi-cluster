@@ -145,12 +145,19 @@ def get_status(cfg: fig.Configuration):
 			except ValueError:
 				idx = None
 
+			sort_by = cfg.pull('sort-by', None)
+			color_keys = cfg.pull('color-keys', True)
 			rows = []
-			for ID in sort_jobkeys(cfg, jobs):
+			for ID in sort_jobkeys(sort_by, jobs):
 				info = jobs[ID]
 				if active_only and 'active' not in info:
 					continue
 				row = [info.get(key, '--') for key in cols]
+				if color_keys and 'status' in cols:
+					i = cols.index('status')
+					status = row[i]
+					if status in STATUS_COLORS:
+						row[i] = colorize(status, STATUS_COLORS[status])
 				row = [f'{r:.3g}' if isinstance(r, float) else r for r in row]
 
 				rows.append(row)
@@ -181,6 +188,18 @@ def get_status(cfg: fig.Configuration):
 		cfg.print(f'Pickled status to: {pkl_name}')
 
 	return active
+
+
+
+STATUS_COLORS = {
+	'Unexpanded': 'magenta',
+	'Idle': 'blue',
+	'Running': 'green',
+	'Removed': 'red',
+	'Completed': 'yellow',
+	'Held': 'red',
+	'Submission_err': 'red',
+}
 
 
 _not_set = object()
@@ -375,7 +394,7 @@ periodic_hold_subcode = 1''')
 			else:
 				print(f'Invalid response: {resp!r}')
 				resp = None
-	cfg.push('confirm', True, silent=True)
+	cfg.push('confirm', False, silent=True)
 
 	submission_command = f'condor_submit_bid {bid} {path / "submit.sub"}'
 	out, err = run_command(submission_command, location=location)

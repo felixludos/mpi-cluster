@@ -168,8 +168,7 @@ def compute_durations(info, sig1='start', sig2='end', now=None):
 		info['duration'] = wall.total_seconds() / 3600
 
 
-def sort_jobkeys(cfg, jobs):
-	sort_by = cfg.pull('sort-by', None)
+def sort_jobkeys(sort_by, jobs):
 
 	keys = list(jobs.keys())
 

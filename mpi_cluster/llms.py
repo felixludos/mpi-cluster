@@ -42,7 +42,7 @@ def launch_llm(cfg: fig.Configuration):
 	launch_location = full_me if location is None else location
 	launch_on_cluster = is_cluster(launch_location)
 
-	_local_msg = 'launching locally' if host is None else 'launch in job' if is_cluster(host) else f'launch on {host}'
+	_local_msg = 'launching locally' if host is None else 'launch as job' if is_cluster(host) else f'launch on {host}'
 	print(f'Currently on {me} - {_local_msg}')
 
 	gpu_devices = get_gpu_info(location)
@@ -110,6 +110,8 @@ def launch_llm(cfg: fig.Configuration):
 	# print('command would be:', command)
 	# command = 'echo "Hello world"'
 
+
+
 	return create_jobs(cfg, commands=command, location=location, confirm=True)
 
 
@@ -153,6 +155,7 @@ def launch_vllm_server(cfg: fig.Configuration):
 			argv.append(f"--{k}={v}")
 
 	# print(argv)
+	print(' '.join(argv))
 
 	import threading
 	from vllm.entrypoints.openai.api_server import logger, VLLM_VERSION, \
@@ -251,6 +254,8 @@ def launch_vllm_server(cfg: fig.Configuration):
 	parser = FlexibleArgumentParser(
 		description="vLLM OpenAI-Compatible RESTful API server.")
 	parser = make_arg_parser(parser)
+
+	# print('dests': [])
 
 	# parser.set_defaults(**raw_args)
 	args = parser.parse_args(argv)
