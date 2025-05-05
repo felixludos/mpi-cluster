@@ -133,7 +133,6 @@ def launch_llm(cfg: fig.Configuration):
 		raise NotImplementedError
 
 	else:
-
 		return fig.quick_run('vllm', **args)
 
 
@@ -346,7 +345,7 @@ def start_vllm_server(cfg: fig.Configuration):
 		async with build_async_engine_client(args) as engine_client:
 			app = build_app(args)
 
-			@app.post("/shutdown")
+			@app.get("/shutdown")
 			async def shutdown():
 				"""Gracefully stop Uvicorn and the engine."""
 				def _stop():
