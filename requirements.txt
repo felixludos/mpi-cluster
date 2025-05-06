@@ -3,3 +3,5 @@ omnifig>=1.0
 tabulate
 tqdm
 sshtunnel
+humanize
+pyperclip

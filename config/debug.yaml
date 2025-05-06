@@ -16,10 +16,6 @@
 
 _meta.script_name: serving
 
-locations:
-  - fleeb@login.cluster.is.localnet
-  - fleeb@wagner.is.localnet
-
 ##########################
 
 #_meta.script_name: launch

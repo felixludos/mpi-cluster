@@ -201,6 +201,7 @@ STATUS_COLORS = {
 	'Submission_err': 'red',
 }
 
+import pyperclip
 
 _not_set = object()
 @fig.script('submit', description='submit jobs to the cluster')
@@ -269,84 +270,94 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 	if working_dir is None:
 		working_dir = '.'
 
-	# Load commands from configuration or file
-	if commands is None:
-		commands = cfg.pulls('commands', 'command', default=None)
-	if isinstance(commands, str):
-		commands = [commands]
+	interactive = cfg.pulls('interactive', 'i', default=False)
 
-	if commands is None:
-		cmd_path = cfg.pulls('command-path', 'cmd-path', 'path', default=None)
-		if cmd_path:
-			cmd_path = Path(cmd_path)
-			if root:
-				cmd_path = root / cmd_path
-			if not cmd_path.exists():
-				raise FileNotFoundError(f'Command file not found: {cmd_path}')
-			commands = [line.strip() for line in cmd_path.open('r') if line.strip() and line[0] != '#']
-
-	if not commands:
-		raise ValueError('No commands provided')
-
-	# Load template for job scripts
-	template_path = cfg.pull('template-path',
-							 str(misc.repo_root().joinpath('assets', 'default_template.sh')), silent=True)
-	if template_path:
-		template_path = Path(template_path)
-		if root:
-			template_path = root / template_path
-		if not template_path.exists():
-			raise FileNotFoundError(f'Template file not found: {template_path}')
-		template = template_path.read_text()
+	if interactive:
+		assert commands is None, f'Commands provided, but interactive mode is enabled'
+		commands = []
+		skip_cmds = True
+		base_env = {}
 	else:
-		template = f'cd {{working_dir}}\n{{command}}' if working_dir else '{command}'
+		# Load commands from configuration or file
+		if commands is None:
+			commands = cfg.pulls('commands', 'command', default=None)
+		if isinstance(commands, str):
+			commands = [commands]
 
-	# Prepare job name and directory
-	skip_cmds = cfg.pull('skip-cmds', len(commands)>5)
-	rawname = cfg.pull('name', 'job')
-	jobdir = Path(cfg.pull('job-dir', str(misc.default_jobdir())))
-	if location is None:
-		jobdir.mkdir(exist_ok=True, parents=True)
+		if commands is None:
+			cmd_path = cfg.pulls('command-path', 'cmd-path', 'path', default=None)
+			if cmd_path:
+				cmd_path = Path(cmd_path)
+				if root:
+					cmd_path = root / cmd_path
+				if not cmd_path.exists():
+					raise FileNotFoundError(f'Command file not found: {cmd_path}')
+				commands = [line.strip() for line in cmd_path.open('r') if line.strip() and line[0] != '#']
 
-	manifest_path = Path(cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True))
-	rawtext, _ = run_command(f'wc -l {manifest_path}', location=location)
-	num = int(rawtext.split()[0]) if rawtext is not None and len(rawtext) else 0
-	# num = sum(1 for _ in manifest_path.open('r')) if manifest_path.exists() else 0
-	name = f"{rawname}_{str(num).zfill(3)}"
-	if cfg.pull('include-date', False):
-		name = f"{name}_{now.strftime('%y%m%d-%H%M%S')}"
+		assert commands is not None, f'No commands provided'
 
-	print(f'Setting up job: {name}')
+		# Load template for job scripts
+		template_path = cfg.pull('template-path',
+								 str(misc.repo_root().joinpath('assets', 'default_template.sh')), silent=True)
+		if template_path:
+			template_path = Path(template_path)
+			if root:
+				template_path = root / template_path
+			if not template_path.exists():
+				raise FileNotFoundError(f'Template file not found: {template_path}')
+			template = template_path.read_text()
+		else:
+			template = f'cd {{working_dir}}\n{{command}}' if working_dir else '{command}'
 
-	path = jobdir / name
-	run_command(f'mkdir -p {str(path)}', location=location)
+		# Prepare job name and directory
+		skip_cmds = cfg.pull('skip-cmds', len(commands)>5)
 
-	# Generate job scripts
-	jobs = [
-		pformat(template, command=cmd, working_dir=working_dir, job_dir=jobdir, name=name, process=i, path=path,
-				date=now)
-		for i, cmd in enumerate(commands)
-	]
+		rawname = cfg.pull('name', 'job')
+		jobdir = Path(cfg.pull('job-dir', str(misc.default_jobdir())))
+		if location is None:
+			jobdir.mkdir(exist_ok=True, parents=True)
+
+		manifest_path = Path(cfg.pull('manifest-path', str(jobdir / 'manifest.jsonl'), silent=True))
+		rawtext, _ = run_command(f'wc -l {manifest_path}', location=location)
+		num = int(rawtext.split()[0]) if rawtext is not None and len(rawtext) else 0
+		# num = sum(1 for _ in manifest_path.open('r')) if manifest_path.exists() else 0
+		name = f"{rawname}_{str(num).zfill(3)}"
+		if cfg.pull('include-date', False):
+			name = f"{name}_{now.strftime('%y%m%d-%H%M%S')}"
+
+		print(f'Setting up job: {name}{" (interactive)" if interactive else ""}')
+
+		path = jobdir / name
+		run_command(f'mkdir -p {str(path)}', location=location)
+
+		# Generate job scripts
+		jobs = [
+			pformat(template, command=cmd, working_dir=working_dir, job_dir=jobdir, name=name, process=i, path=path,
+					date=now)
+			for i, cmd in enumerate(commands)
+		]
+
+		job_path = path / 'job-$(Process).sh'
+
+		base_env = {
+			'JOBDIR': path,
+			'JOBEXEC': job_path,
+			'PROCESS_ID': '$(Process)',
+			'JOB_ID': '$(ID)',
+			'JOB_NAME': name,
+			'JOB_NUM': num,
+		}
 
 	# Prepare submission file
 	sub = []
-	job_path = path / 'job-$(Process).sh'
+	reqs = []
 	env_vars = cfg.pull("env-vars", {})
-	base_env = {
-		'JOBDIR': path,
-		'JOBEXEC': job_path,
-		'PROCESS_ID': '$(Process)',
-		'JOB_ID': '$(ID)',
-		'JOB_NAME': name,
-		'JOB_NUM': num,
-	}
 	if env_vars is not None:
 		base_env.update(env_vars)
 	sub.append(f'environment = {";".join(f"{k}={v}" for k, v in base_env.items())}')
 	sub.append(f'request_memory = {cfg.pulls("ram", "mem", default=1) * 1024}')
 	sub.append(f'request_cpus = {cfg.pull("cpu", 1)}')
 
-	reqs = []
 	if cfg.pull('gpu', 0) > 0:
 		sub.append(f'request_gpus = {cfg.pull("gpu", 0)}')
 
@@ -387,91 +398,98 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 	if len(reqs):
 		sub.append('requirements = {}'.format(' && '.join(f'({r})' for r in reqs)))
 
-	sub.append('''on_exit_hold = (ExitCode =?= 3)
-on_exit_hold_reason = "Checkpointed, will resume"
-on_exit_hold_subcode = 2
-periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReasonSubCode =?= 1) || (HoldReasonSubCode =?= 2)) )''')
-
-	max_running_price = cfg.pull("max-running-price", None)
-	if max_running_price is not None:
-		running_price_exceeded_action = cfg.pull("running-price-exceeded-action", "kill")
-		sub.append(f"+MaxRunningPrice = {max_running_price}")
-		if running_price_exceeded_action == "kill":
-			cfg.print(f"Job will be killed if running price exceeds {max_running_price}")
-		elif running_price_exceeded_action == "restart":
-			cfg.print(f"Job will be restarted if running price exceeds {max_running_price}")
-		else:
-			cfg.print(f"Unknown running price exceeded action {running_price_exceeded_action}")
-			running_price_exceeded_action = "kill"
-			cfg.print(f"Job will be killed if running price exceeds {max_running_price}")
-		sub.append(f'+RunningPriceExceededAction = "{running_price_exceeded_action}"')
-
-	time_limit = cfg.pull('time-limit', None)
-	if time_limit:
-		sub.append(f'''MaxTime = {int(float(time_limit) * 3600)}
-periodic_hold = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))
-periodic_hold_reason = "Job runtime exceeded"
-periodic_hold_subcode = 1''')
-
-	stdout_path = path / 'stdout-$(Process).txt'
-	log_path = path / 'log-$(Process).txt'
-	sub.append(SUBMISSION_FORMAT.format(exec=job_path, err=stdout_path, out=stdout_path, log=log_path, procs=len(commands)))
-
-	# Write job scripts and submission file
-	for i, job in enumerate(jobs):
-		write_to_file(job, path=path / f'job-{i}.sh', location=location)
-
-	full_sub = "\n".join(sub)
-	write_to_file(full_sub, path=path.joinpath("submit.sub"), location=location)
-
 	# Submit jobs
 	bid = cfg.pull('bid', None)
 	if not bid:
 		cfg.print('WARNING: Job not submitted because no bid was included')
 		return name
 
-	cfg.print(tabulate(enumerate(commands), headers=['i', 'command']))
+	if interactive:
+		args = ' '.join(f'-append {shlex.quote(s)}' for s in sub)
+		submission_command = f'condor_submit_bid {bid} -i {args}'
+		print(submission_command)
+		pyperclip.copy(submission_command)
 
-	if skip_confirm is None:
-		skip_confirm = cfg.pull('skip-confirm', False, silent=True)
-	if not skip_confirm:
-		resp = None
-		while resp is None:
-			resp = input(f'Submit {len(commands)} jobs ([y]/n)? ')
-			if resp.lower() in {'n', 'no'}:
-				print('Nothing was submitted.')
-				return
-			elif resp.lower() in {'y', 'yes', ''}:
-				break
+	else:
+		sub.append('''on_exit_hold = (ExitCode =?= 3)
+on_exit_hold_reason = "Checkpointed, will resume"
+on_exit_hold_subcode = 2
+periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && ((HoldReasonSubCode =?= 1) || (HoldReasonSubCode =?= 2)) )''')
+
+		time_limit = cfg.pull('time-limit', None)
+		if time_limit:
+			sub.append(f'''MaxTime = {int(float(time_limit) * 3600)}
+periodic_hold = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))
+periodic_hold_reason = "Job runtime exceeded"
+periodic_hold_subcode = 1''')
+
+		max_running_price = cfg.pull("max-running-price", None)
+		if max_running_price is not None:
+			running_price_exceeded_action = cfg.pull("running-price-exceeded-action", "kill")
+			sub.append(f"+MaxRunningPrice = {max_running_price}")
+			if running_price_exceeded_action == "kill":
+				cfg.print(f"Job will be killed if running price exceeds {max_running_price}")
+			elif running_price_exceeded_action == "restart":
+				cfg.print(f"Job will be restarted if running price exceeds {max_running_price}")
 			else:
-				print(f'Invalid response: {resp!r}')
-				resp = None
+				cfg.print(f"Unknown running price exceeded action {running_price_exceeded_action}")
+				running_price_exceeded_action = "kill"
+				cfg.print(f"Job will be killed if running price exceeds {max_running_price}")
+			sub.append(f'+RunningPriceExceededAction = "{running_price_exceeded_action}"')
 
-	submission_command = f'condor_submit_bid {bid} {path / "submit.sub"}'
-	out, err = run_command(submission_command, location=location)
+		stdout_path = path / 'stdout-$(Process).txt'
+		log_path = path / 'log-$(Process).txt'
+		sub.append(SUBMISSION_FORMAT.format(exec=job_path, err=stdout_path, out=stdout_path, log=log_path, procs=len(commands)))
 
-	ID = out.split('submitted to cluster ')[-1].strip() if 'submitted to cluster ' in out else None
+		# Write job scripts and submission file
+		for i, job in enumerate(jobs):
+			write_to_file(job, path=path / f'job-{i}.sh', location=location)
 
-	if not ID:
-		cfg.print(f'WARNING: Job {name} not submitted because no ID was returned')
+		full_sub = "\n".join(sub)
+		write_to_file(full_sub, path=path.joinpath("submit.sub"), location=location)
+
+		cfg.print(tabulate(enumerate(commands), headers=['i', 'command']))
+
+		if skip_confirm is None:
+			skip_confirm = cfg.pull('skip-confirm', False, silent=True)
+		if not skip_confirm:
+			resp = None
+			while resp is None:
+				resp = input(f'Submit {len(commands)} jobs ([y]/n)? ')
+				if resp.lower() in {'n', 'no'}:
+					print('Nothing was submitted.')
+					return
+				elif resp.lower() in {'y', 'yes', ''}:
+					break
+				else:
+					print(f'Invalid response: {resp!r}')
+					resp = None
+
+		submission_command = f'condor_submit_bid {bid} {path / "submit.sub"}'
+		out, err = run_command(submission_command, location=location)
+
+		ID = out.split('submitted to cluster ')[-1].strip() if 'submitted to cluster ' in out else None
+
+		if not ID:
+			cfg.print(f'WARNING: Job {name} not submitted because no ID was returned')
+			return name
+
+		# Update manifest
+		manifest_entry = {
+			'name': name,
+			'job-num': num,
+			'procs': len(commands),
+			'path': str(path),
+			'date': now.strftime("%y%m%d-%H%M%S"),
+			'bid': bid,
+			'ID': ID,
+			'commands': None if skip_cmds else commands
+		}
+
+		append_to_file(f'{json.dumps(manifest_entry)}\n', path=manifest_path, location=location)
+
+		cfg.print(f'Job {name} submitted: {bid}')
 		return name
-
-	# Update manifest
-	manifest_entry = {
-		'name': name,
-		'job-num': num,
-		'procs': len(commands),
-		'path': str(path),
-		'date': now.strftime("%y%m%d-%H%M%S"),
-		'bid': bid,
-		'ID': ID,
-		'commands': None if skip_cmds else commands
-	}
-
-	append_to_file(f'{json.dumps(manifest_entry)}\n', path=manifest_path, location=location)
-
-	cfg.print(f'Job {name} submitted: {bid}')
-	return name
 
 
 

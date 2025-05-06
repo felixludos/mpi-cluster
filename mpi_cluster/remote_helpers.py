@@ -125,7 +125,7 @@ def append_to_file(text: str, path: Path, location=None):
 
 _file_cache = misc.repo_root().joinpath('assets', 'file_cache.json')
 _file_cache = None
-def load_file(path: Path, location: str = None) -> str:
+def load_file(path: Union[str, Path], location: str = None) -> str:
 	text = None
 	cache = None
 	pathcode = str(path).replace('\\', '/')
@@ -134,6 +134,7 @@ def load_file(path: Path, location: str = None) -> str:
 		if pathcode.replace('\\', '/') in cache:
 			return cache[pathcode]
 	if location is None:
+		path = Path(path)
 		if path.exists():
 			text = path.read_text()
 	else:

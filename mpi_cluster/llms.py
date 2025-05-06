@@ -1,9 +1,12 @@
 import argparse
 import os, re
 from contextlib import asynccontextmanager
+
+import humanize
+
 from .imports import *
 from .misc import repo_root
-from .remote_helpers import run_command, append_to_file
+from .remote_helpers import run_command, append_to_file, load_file
 from .op import create_jobs
 
 
@@ -113,11 +116,11 @@ def launch_llm(cfg: fig.Configuration):
 	# model_name = args['model']
 
 	if launch_on_cluster:
+		resources = settings.pop('resources', {})
 		terms = argdict2argv({f'--{k}':v for k,v in args.items()})
 		arg_str = ' '.join(shlex.quote(v) if isinstance(v, str) else v for v in terms)
 
 		command = f'fig vllm {arg_str}'
-		resources = settings.get('resources', {})
 
 		# cfg.push('command', command, silent=True)
 		for k, v in resources.items():
@@ -134,6 +137,9 @@ def launch_llm(cfg: fig.Configuration):
 
 import asyncio
 import httpx
+import socket
+import signal
+from sshtunnel import SSHTunnelForwarder
 from rich.live import Live
 from rich.table import Table
 from rich import box
@@ -142,40 +148,55 @@ from rich import box
 def make_serving_table(data, columns):
 	if not isinstance(columns, dict):
 		columns = {col: {} for col in columns}
-	table = Table(title="Server Status", box=box.SIMPLE_HEAVY)
+	# table = Table(title="Server Status", box=box.SIMPLE_HEAVY)
+	table = Table(box=box.SIMPLE_HEAVY)
 	for col, style in columns.items():
 		table.add_column(col, **style)
 	# table.add_column("Server", style="cyan", no_wrap=True)
 	# table.add_column("Status", style="bold")
+	status_color = {'ended': 'grey', 'error': 'red', 'unknown': 'red', 'offline': 'grey',
+					'loading': 'blue', 'waiting': 'cyan', 'online': 'green'}
 	def _display(key, val):
 		if isinstance(val, float):
 			return f'{val:.2f}'
+		if val is None:
+			return '--'
 		if key == 'status':
-			return val.upper()
+			return f'[{status_color.get(val,"red")}]{val.upper()}'
+		if key == 'duration':
+			return humanize.naturaldelta(val)
 		return str(val)
 
+	data = sort_serving_data(data)
+
 	for item in data:
-		table.add_row(*[str(item[col]) for col in columns.keys()])
+		table.add_row(*[_display(col, item.get(col)) for col in columns.keys()])
 	return table
+
+def sort_serving_data(data):
+	status_order = ['online', 'loading', 'waiting', 'error', 'unknown', 'ended', 'offline']
+	data.sort(key=lambda x: (status_order.index(x['status'])
+							 if x['status'] in status_order else len(status_order), x.get('duration'), x['url']))
+	return data
 
 
 def load_serving_log(path, location=None):
 	def compute_status(info):
 		events = info['events']
 		if 'end' in events:
-			return 'ended'
+			return 'ended' # ended correctly without error
 		if 'error' in events:
-			return 'error'
+			return 'error' # there was some error
 		if 'offline' in events:
-			return 'offline'
+			return 'offline' # server is confirmed offline
 		if 'live' in events:
-			return 'live'
+			return 'waiting' # server should be live, but not confirmed yet
 		if 'start' in events:
-			return 'loading'
+			return 'loading' # server is starting up
 		return 'unknown'
 	def compute_startup(info):
-		if 'start' in info['events'] and 'live' not in info['events']:
-			return (info['events']['line'] - info['events']['start']).total_seconds() / 60
+		if 'start' in info['events'] and 'live' in info['events']:
+			return (info['events']['live'] - info['events']['start']).total_seconds() / 60
 	def compute_duration(info):
 		if 'live' in info['events'] and ('end' in info['events'] or 'error' in info['events']):
 			return (info['events'].get('end', info['events'].get('error')) - info['events']['live']
@@ -183,11 +204,16 @@ def load_serving_log(path, location=None):
 	def compute_url(info):
 		if 'live' in info['events']:
 			return f"http://{info.get('host', 'localhost')}:{info['port']}"
+	def compute_needs_tunnel(info):
+		if 'live' in info['events']:
+			return info.get('host', 'localhost') != info['location'].split('@')[-1]
+		return False
 	feats = {
 		'status': compute_status,
 		'startup': compute_startup,
 		'duration': compute_duration,
-		'url': compute_url
+		'url': compute_url,
+		'needs_tunnel': compute_needs_tunnel,
 	}
 
 	columns = ['event', 'timestamp', 'model', 'host', 'port', 'pid', 'id']
@@ -195,12 +221,17 @@ def load_serving_log(path, location=None):
 
 	items = {}
 
-	text = load_file(path, loc)
+	try:
+		text = load_file(path, location)
+	except FileNotFoundError:
+		return items
 
 	for line in text.split('\n'):
+		if line.strip() == '':
+			continue
 		info = {key: val for key, val in zip(columns, line.split('\t'))}
 		if info['id'] not in items:
-			items[info['id']] = {**{key: info[key] for key in props}, 'location': loc, 'events': {}}
+			items[info['id']] = {**{key: info[key] for key in props}, 'location': location, 'events': {}}
 		if info['event'] in items[info['id']]['events']:
 			raise ValueError(f'{info} already exists in {items[info["id"]]}')
 		items[info['id']]['events'][info['event']] = datetime.strptime(info['timestamp'], '%y%m%d-%H%M%S')
@@ -274,8 +305,103 @@ def view_serving(cfg: fig.Configuration):
 	if only_active:
 		log = [item for item in log if item['status'] == 'live']
 
+	autotunnel = cfg.pull('tunnel', True)
+	# _default_columns = ['status', 'duration', 'model', 'url', 'tunnel'] if autotunnel
+	_default_columns = ['status', 'duration', 'model', 'url']
+	_default_columns.extend(['host', 'id'])
+	columns = cfg.pull('columns', _default_columns)
+	columns = {col: {} for col in columns}
+	if 'status' in columns:
+		columns['status']['justify'] = 'cyan'
+	if 'model' in columns:
+		columns['model']['no_wrap'] = True
+		columns['model']['style'] = 'bold'
+	if 'url' in columns:
+		columns['url']['no_wrap'] = True
 
-	raise NotImplementedError
+	# tunnel as needed
+	tunnels = []
+	tunnel_base = cfg.pull('tunnel-base', 8001)
+	def is_port_free(port, host='localhost'):
+		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+			return s.connect_ex((host, port)) != 0
+	def get_free_port():
+		nonlocal tunnel_base
+		port = tunnel_base
+		while not is_port_free(port):
+			port += 1
+		assert port < 65535, f'no free port found starting from {tunnel_base}'
+		tunnel_base = port + 1
+		return port
+	def create_tunnel(item, localport=None):
+		if localport is None:
+			localport = get_free_port()
+		location = item.get('location')
+		assert location is not None
+		user, host = location.split('@')
+		# no tunnel needed if host is the same
+		# this should maybe confirm that pinging the host directly works
+		assert host != item['host'], f'host {item["host"]} is the same as location {location}'
+
+		tunnel = SSHTunnelForwarder(
+			ssh_address_or_host=(host, 22),
+			ssh_username=user,
+			remote_bind_address=(item['host'], item['port']),
+			local_bind_address=('localhost', localport),
+		)
+		item['tunnel'] = f'http://localhost:{localport}'
+		tunnel.start()
+		return tunnel
+
+	if autotunnel:
+		tunnels.extend([create_tunnel(item) for item in log if item['status'] == 'live'])
+
+	# view serving
+	async def check_server(item):
+		try:
+			url = item.get('tunnel',item['url'])
+			url = f'{url}/ping'
+			while item['status'] == 'loading' or item['status'] == 'waiting':
+				async with httpx.AsyncClient(timeout=3.0) as client:
+					response = await client.get(url)
+					if response.status_code < 500:
+						item['status'] = 'online'
+						return
+					elif item['status'] == 'waiting':
+						item['status'] = 'offline'
+						return
+					await asyncio.sleep(1)
+		except Exception:
+			item['status'] = 'offline'
+
+	stop_event = asyncio.Event()
+	def handle_sigint():
+		print("\n[!] Keyboard interrupt received. Exiting...")
+		stop_event.set()
+
+	async def view_serving():
+		with Live(make_serving_table(log, columns), refresh_per_second=4) as live:
+			tasks = [check_server(item) for item in log]
+			while any(item['status'] == "waiting" or item['status'] == 'loading' for item in log):
+				await asyncio.sleep(0.2)
+				live.update(make_serving_table(log, columns))
+			await asyncio.gather(*tasks)
+			live.update(make_serving_table(log, columns))  # final update
+
+		loop = asyncio.get_running_loop()
+		loop.add_signal_handler(signal.SIGINT, handle_sigint)
+
+		print("Press Ctrl+C to stop...")
+		await stop_event.wait()
+		# print("Cleanup complete.")
+
+	try:
+		asyncio.run(view_serving())
+	finally:
+		if len(tunnels) > 0:
+			for tunnel in tunnels:
+				tunnel.stop()
+
 
 
 
