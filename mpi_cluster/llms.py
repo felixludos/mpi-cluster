@@ -391,8 +391,10 @@ def view_serving(cfg: fig.Configuration):
 
 	# view serving
 	async def check_server(item):
+		if item['status'] == 'loading':
+			return
 		try:
-			while item['status'] == 'loading' or item['status'] == 'waiting':
+			while item['status'] == 'waiting':
 				if item.get('needs_tunnel', item['location'] is not None) and 'tunnel' not in item:
 					create_tunnel(item)
 					url = item.get('tunnel')
