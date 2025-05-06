@@ -67,7 +67,7 @@ def process_tsv(path, cols=None, include_event=None): # replaced with process_da
 
 
 def process_data_table(file_text: str, cols=None, include_event=None):
-	if len(file_text.strip()):
+	if len(file_text.strip()) == 0:
 		return {}
 
 	data = pd.read_csv(io.StringIO(file_text), sep='\t', header=None)
