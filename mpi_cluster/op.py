@@ -402,13 +402,16 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 	bid = cfg.pull('bid', None)
 	if not bid:
 		cfg.print('WARNING: Job not submitted because no bid was included')
-		return name
+		return
 
 	if interactive:
 		args = ' '.join(f'-append {shlex.quote(s)}' for s in sub)
 		submission_command = f'condor_submit_bid {bid} -i {args}'
 		print(submission_command)
-		pyperclip.copy(submission_command)
+		try:
+			pyperclip.copy(submission_command)
+		except pyperclip.PyperclipException:
+			pass
 
 	else:
 		sub.append('''on_exit_hold = (ExitCode =?= 3)
