@@ -55,10 +55,10 @@ def launch_llm(cfg: fig.Configuration):
 		if is_cluster(host) else f'launch on {host}'
 	print(f'Currently on {me} - {_local_msg}')
 
+	model = cfg.pull('model', None)
+
 	gpu_devices = get_gpu_info(location)
 	total_gpu_ram = sum([d['ram'] for d in gpu_devices]) if gpu_devices is not None else 0
-
-	model = cfg.pull('model', None)
 
 	acc_path = repo_root().joinpath('assets', 'vllm-settings.yml')
 	acc = load_yaml(acc_path)
