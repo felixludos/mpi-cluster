@@ -19,6 +19,8 @@ _meta.script_name: all-offline
 
 _base: [all]
 
+logpath: /home/fleeb/vllm.log
+
 ##########################
 
 #_meta.script_name: launch

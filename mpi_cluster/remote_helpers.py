@@ -16,7 +16,7 @@ def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__e
 	"""
 	if append_path is not None:
 		print(f'Appending to {append_path}:\n{command}')
-		append_path = Path(append_path).resolve().expanduser().absolute()
+		append_path = Path(append_path).expanduser().absolute().resolve()
 		with append_path.open('a') as f:
 			f.write(command)
 		return
