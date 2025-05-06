@@ -92,11 +92,17 @@ def get_status(cfg: fig.Configuration):
 					job['bid'] = bid
 
 		starts_path = cfg.pull('starts-path', jobdir / 'starts.tsv')
-		starts_text = load_file(starts_path, location=location)
+		try:
+			starts_text = load_file(starts_path, location=location)
+		except FileNotFoundError:
+			starts_text = ''
 		starts = process_data_table(starts_text, cols=['name', 'ID', 'date', 'host'], include_event='start')
 
 		terminals_path = cfg.pull('terminals-path', jobdir / 'terminals.tsv')
-		terminals_text = load_file(terminals_path, location=location)
+		try:
+			terminals_text = load_file(terminals_path, location=location)
+		except FileNotFoundError:
+			terminals_text = ''
 		terminals = process_data_table(terminals_text, cols=['name', 'ID', 'date', 'host', 'code'], include_event='end')
 
 		failed.extend(starts.get('failed', []))
