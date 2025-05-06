@@ -161,9 +161,9 @@ def get_status(cfg: fig.Configuration):
 				row = [info.get(key, '--') for key in cols]
 				if color_keys and 'status' in cols:
 					i = cols.index('status')
-					status = row[i]
-					if status in STATUS_COLORS:
-						row[i] = colorize(status, STATUS_COLORS[status])
+					status = row[i].upper()
+					if status.lower() in STATUS_COLORS:
+						row[i] = colorize(status, STATUS_COLORS[status.lower()])
 				row = [f'{r:.3g}' if isinstance(r, float) else r for r in row]
 
 				rows.append(row)
@@ -198,13 +198,13 @@ def get_status(cfg: fig.Configuration):
 
 
 STATUS_COLORS = {
-	'Unexpanded': 'magenta',
-	'Idle': 'blue',
-	'Running': 'green',
-	'Removed': 'red',
-	'Completed': 'yellow',
-	'Held': 'red',
-	'Submission_err': 'red',
+	'unexpanded': 'magenta',
+	'idle': 'blue',
+	'running': 'green',
+	'removed': 'red',
+	'completed': 'yellow',
+	'held': 'red',
+	'submission_err': 'red',
 }
 
 import pyperclip

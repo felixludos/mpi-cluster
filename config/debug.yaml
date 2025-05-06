@@ -16,6 +16,8 @@
 
 _meta.script_name: serving
 
+_base: [all]
+
 ##########################
 
 #_meta.script_name: launch

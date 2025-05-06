@@ -123,16 +123,21 @@ def append_to_file(text: str, path: Path, location=None):
 	return path
 
 
-_file_cache = misc.repo_root().joinpath('assets', 'file_cache.json')
-_file_cache = None
+_file_cache = misc.repo_root().joinpath('assets', 'file_cache.json') # for debugging with pycharm
+# _file_cache = None
 def load_file(path: Union[str, Path], location: str = None) -> str:
 	text = None
 	cache = None
 	pathcode = str(path).replace('\\', '/')
+	filekey = f'{location}-{pathcode}'
 	if _file_cache is not None:
+		if not _file_cache.exists():
+			_file_cache.parent.mkdir(parents=True, exist_ok=True)
+			with open(_file_cache, 'w') as f:
+				json.dump({}, f)
 		cache = load_json(_file_cache)
-		if pathcode.replace('\\', '/') in cache:
-			return cache[pathcode]
+		if filekey in cache:
+			return cache[filekey]
 	if location is None:
 		path = Path(path)
 		if path.exists():
@@ -143,8 +148,8 @@ def load_file(path: Union[str, Path], location: str = None) -> str:
 
 	if text is None:
 		raise FileNotFoundError(f'File not found: {path}')
-	if cache is not None:
-		cache[pathcode] = text
+	if location is not None and cache is not None:
+		cache[filekey] = text
 		with open(_file_cache, 'w') as f:
 			json.dump(cache, f)
 	return text

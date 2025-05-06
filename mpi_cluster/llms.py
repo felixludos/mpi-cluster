@@ -1,8 +1,10 @@
 import argparse
+import io
 import os, re
 from contextlib import asynccontextmanager
 
 import humanize
+import sshtunnel
 
 from .imports import *
 from .misc import repo_root
@@ -145,7 +147,7 @@ from rich.table import Table
 from rich import box
 
 
-def make_serving_table(data, columns):
+def make_serving_table(data, columns, online_only=False):
 	if not isinstance(columns, dict):
 		columns = {col: {} for col in columns}
 	# table = Table(title="Server Status", box=box.SIMPLE_HEAVY)
@@ -154,29 +156,46 @@ def make_serving_table(data, columns):
 		table.add_column(col, **style)
 	# table.add_column("Server", style="cyan", no_wrap=True)
 	# table.add_column("Status", style="bold")
-	status_color = {'ended': 'grey', 'error': 'red', 'unknown': 'red', 'offline': 'grey',
+	status_color = {'ended': 'grey', 'error': 'red', 'unknown': 'red', 'offline': 'red',
 					'loading': 'blue', 'waiting': 'cyan', 'online': 'green'}
-	def _display(key, val):
+	def _display(item, key, val):
 		if isinstance(val, float):
 			return f'{val:.2f}'
-		if val is None:
+		if key == 'duration':
+			if item['status'] == 'online' and 'live' in item['events']:
+				return _display(item, key, (datetime.now() - item['events']['live']).total_seconds() / 3600)
 			return '--'
 		if key == 'status':
 			return f'[{status_color.get(val,"red")}]{val.upper()}'
 		if key == 'duration':
 			return humanize.naturaldelta(val)
+		if key == 'loc':
+			if item['host'] is None:
+				return 'localhost'
+			return item['host'].split('.')[0]
+		if key == 'address':
+			if item['status'] in {'offline', 'ended', 'error'}:
+				return '--'
+			if item['needs_tunnel']:
+				return item.get('tunnel', '--')
+			return item.get('url', '--')
+		if val is None:
+			return '--'
 		return str(val)
+
+	if online_only:
+		data = [item for item in data if item['status'] not in {'offline', 'ended', 'error'}]
 
 	data = sort_serving_data(data)
 
 	for item in data:
-		table.add_row(*[_display(col, item.get(col)) for col in columns.keys()])
+		table.add_row(*[_display(item, col, item.get(col)) for col in columns.keys()])
 	return table
 
 def sort_serving_data(data):
 	status_order = ['online', 'loading', 'waiting', 'error', 'unknown', 'ended', 'offline']
 	data.sort(key=lambda x: (status_order.index(x['status'])
-							 if x['status'] in status_order else len(status_order), x.get('duration'), x['url']))
+							 if x['status'] in status_order else len(status_order), x.get('duration') or 0, x['url']))
 	return data
 
 
@@ -204,6 +223,9 @@ def load_serving_log(path, location=None):
 	def compute_url(info):
 		if 'live' in info['events']:
 			return f"http://{info.get('host', 'localhost')}:{info['port']}"
+	def compute_started(info):
+		if 'live' in info['events']:
+			return info['events']['live'].strftime('%b-%-d %H:%M:%S')
 	def compute_needs_tunnel(info):
 		if 'live' in info['events']:
 			return info.get('host', 'localhost') != info['location'].split('@')[-1]
@@ -211,6 +233,7 @@ def load_serving_log(path, location=None):
 	feats = {
 		'status': compute_status,
 		'startup': compute_startup,
+		'started': compute_started,
 		'duration': compute_duration,
 		'url': compute_url,
 		'needs_tunnel': compute_needs_tunnel,
@@ -303,13 +326,11 @@ def view_serving(cfg: fig.Configuration):
 		log.extend(load_serving_log(path, loc).values())
 
 	if only_active:
-		log = [item for item in log if item['status'] == 'live']
+		log = [item for item in log if item['status'] in {'online', 'loading', 'waiting'}]
 
-	autotunnel = cfg.pull('tunnel', True)
+	# autotunnel = cfg.pull('tunnel', True)
 	# _default_columns = ['status', 'duration', 'model', 'url', 'tunnel'] if autotunnel
-	_default_columns = ['status', 'duration', 'model', 'url']
-	_default_columns.extend(['host', 'id'])
-	columns = cfg.pull('columns', _default_columns)
+	columns = cfg.pull('columns', ['status', 'model', 'loc', 'address', 'started', 'duration', 'startup'])
 	columns = {col: {} for col in columns}
 	if 'status' in columns:
 		columns['status']['justify'] = 'cyan'
@@ -318,6 +339,8 @@ def view_serving(cfg: fig.Configuration):
 		columns['model']['style'] = 'bold'
 	if 'url' in columns:
 		columns['url']['no_wrap'] = True
+	if 'address' in columns:
+		columns['address']['no_wrap'] = True
 
 	# tunnel as needed
 	tunnels = []
@@ -343,36 +366,48 @@ def view_serving(cfg: fig.Configuration):
 		# this should maybe confirm that pinging the host directly works
 		assert host != item['host'], f'host {item["host"]} is the same as location {location}'
 
-		tunnel = SSHTunnelForwarder(
-			ssh_address_or_host=(host, 22),
-			ssh_username=user,
-			remote_bind_address=(item['host'], item['port']),
-			local_bind_address=('localhost', localport),
-		)
-		item['tunnel'] = f'http://localhost:{localport}'
-		tunnel.start()
-		return tunnel
-
-	if autotunnel:
-		tunnels.extend([create_tunnel(item) for item in log if item['status'] == 'live'])
+		with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
+			tunnel = SSHTunnelForwarder(
+				ssh_address_or_host=(host, 22),
+				ssh_username=user,
+				ssh_pkey='~/.ssh/id_rsa',
+				allow_agent=False,
+				remote_bind_address=(item['host'], int(item['port'])),
+				local_bind_address=('localhost', localport),
+			)
+			try:
+				tunnel.start()
+			except sshtunnel.BaseSSHTunnelForwarderError:
+				return None
+			else:
+				item['tunnel'] = f'http://localhost:{localport}'
+				item['tunnel_obj'] = tunnel
+				return tunnel
 
 	# view serving
 	async def check_server(item):
 		try:
-			url = item.get('tunnel',item['url'])
-			url = f'{url}/ping'
 			while item['status'] == 'loading' or item['status'] == 'waiting':
-				async with httpx.AsyncClient(timeout=3.0) as client:
-					response = await client.get(url)
-					if response.status_code < 500:
-						item['status'] = 'online'
-						return
-					elif item['status'] == 'waiting':
-						item['status'] = 'offline'
-						return
-					await asyncio.sleep(1)
-		except Exception:
-			item['status'] = 'offline'
+				if item.get('needs_tunnel', item['location'] is not None) and 'tunnel' not in item:
+					create_tunnel(item)
+					url = item.get('tunnel')
+				else:
+					url = item['url']
+				if url is not None:
+					async with httpx.AsyncClient(timeout=3.0) as client:
+						response = await client.get(f'{url}/ping')
+						if response.status_code < 500:
+							item['status'] = 'online'
+							return
+						elif item['status'] == 'waiting':
+							break
+				await asyncio.sleep(1)
+		except:
+			pass
+		item['status'] = 'offline'
+		if 'tunnel_obj' in item:
+			item['tunnel_obj'].stop()
+			del item['tunnel'], item['tunnel_obj']
 
 	stop_event = asyncio.Event()
 	def handle_sigint():
@@ -380,13 +415,16 @@ def view_serving(cfg: fig.Configuration):
 		stop_event.set()
 
 	async def view_serving():
-		with Live(make_serving_table(log, columns), refresh_per_second=4) as live:
-			tasks = [check_server(item) for item in log]
+		with Live(make_serving_table(log, columns, online_only=only_active), refresh_per_second=4) as live:
+			tasks = [asyncio.create_task(check_server(item)) for item in log]
 			while any(item['status'] == "waiting" or item['status'] == 'loading' for item in log):
 				await asyncio.sleep(0.2)
-				live.update(make_serving_table(log, columns))
+				live.update(make_serving_table(log, columns, online_only=only_active))
 			await asyncio.gather(*tasks)
-			live.update(make_serving_table(log, columns))  # final update
+			# print("\033c", end="")
+			# height = shutil.get_terminal_size().lines
+			# print("\n" * height)
+			live.update(make_serving_table(log, columns, online_only=only_active))  # final update
 
 		loop = asyncio.get_running_loop()
 		loop.add_signal_handler(signal.SIGINT, handle_sigint)
@@ -398,10 +436,9 @@ def view_serving(cfg: fig.Configuration):
 	try:
 		asyncio.run(view_serving())
 	finally:
-		if len(tunnels) > 0:
-			for tunnel in tunnels:
-				tunnel.stop()
-
+		for item in log:
+			if 'tunnel_obj' in item:
+				item['tunnel_obj'].stop()
 
 
 
@@ -435,6 +472,8 @@ def collect_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
 			rawargs[info['option']] = value
 
 	argv = argdict2argv(rawargs)
+	print('Equivalent `vllm` command:')
+	print(f'vllm serve {" ".join(map(shlex.quote,argv))}')
 
 	args = parser.parse_args(argv)
 	return args
