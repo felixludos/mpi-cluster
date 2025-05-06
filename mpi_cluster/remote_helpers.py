@@ -124,7 +124,7 @@ def append_to_file(text: str, path: Path, location=None):
 
 
 _file_cache = misc.repo_root().joinpath('assets', 'file_cache.json') # for debugging with pycharm
-# _file_cache = None
+_file_cache = None
 def load_file(path: Union[str, Path], location: str = None) -> str:
 	text = None
 	cache = None

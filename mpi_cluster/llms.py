@@ -159,16 +159,18 @@ def make_serving_table(data, columns, online_only=False):
 	status_color = {'ended': 'grey', 'error': 'red', 'unknown': 'red', 'offline': 'red',
 					'loading': 'blue', 'waiting': 'cyan', 'online': 'green'}
 	def _display(item, key, val):
+		if key == 'duration':
+			if val is None and item['status'] == 'online' and 'live' in item['events']:
+				val = (datetime.now() - item['events']['live']).total_seconds() #/ 3600
+			return '--' if val is None else humanize.naturaldelta(val)
+		if key == 'startup':
+			return '--' if val is None else humanize.naturaldelta(val)
 		if isinstance(val, float):
 			return f'{val:.2f}'
-		if key == 'duration':
-			if item['status'] == 'online' and 'live' in item['events']:
-				return _display(item, key, (datetime.now() - item['events']['live']).total_seconds() / 3600)
-			return '--'
+		if key == 'started':
+			return '--' if val is None else val.strftime('%b-%-d %H:%M:%S')
 		if key == 'status':
 			return f'[{status_color.get(val,"red")}]{val.upper()}'
-		if key == 'duration':
-			return humanize.naturaldelta(val)
 		if key == 'loc':
 			if item['host'] is None:
 				return 'localhost'
@@ -193,9 +195,12 @@ def make_serving_table(data, columns, online_only=False):
 	return table
 
 def sort_serving_data(data):
-	status_order = ['online', 'loading', 'waiting', 'error', 'unknown', 'ended', 'offline']
-	data.sort(key=lambda x: (status_order.index(x['status'])
-							 if x['status'] in status_order else len(status_order), x.get('duration') or 0, x['url']))
+	status_order = ['online', 'loading', 'waiting', 'error']#, 'unknown', 'ended', 'offline']
+	now = datetime.now()
+	data.sort(key=lambda item: (status_order.index(item['status'])
+							 if item['status'] in status_order else len(status_order),
+								now - (item['started'] or now),
+								item.get('duration') or 0, item['url']))
 	return data
 
 
@@ -215,17 +220,17 @@ def load_serving_log(path, location=None):
 		return 'unknown'
 	def compute_startup(info):
 		if 'start' in info['events'] and 'live' in info['events']:
-			return (info['events']['live'] - info['events']['start']).total_seconds() / 60
+			return (info['events']['live'] - info['events']['start']).total_seconds() #/ 60
 	def compute_duration(info):
 		if 'live' in info['events'] and ('end' in info['events'] or 'error' in info['events']):
 			return (info['events'].get('end', info['events'].get('error')) - info['events']['live']
-					).total_seconds() / 60 / 60
+					).total_seconds() #/ 60 / 60
 	def compute_url(info):
 		if 'live' in info['events']:
 			return f"http://{info.get('host', 'localhost')}:{info['port']}"
 	def compute_started(info):
 		if 'live' in info['events']:
-			return info['events']['live'].strftime('%b-%-d %H:%M:%S')
+			return info['events']['live']
 	def compute_needs_tunnel(info):
 		if 'live' in info['events']:
 			return info.get('host', 'localhost') != info['location'].split('@')[-1]
