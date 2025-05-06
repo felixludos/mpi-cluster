@@ -359,8 +359,9 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 	sub.append(f'request_memory = {cfg.pulls("ram", "mem", default=1) * 1024}')
 	sub.append(f'request_cpus = {cfg.pull("cpu", 1)}')
 
-	if cfg.pull('gpu', 0) > 0:
-		sub.append(f'request_gpus = {cfg.pull("gpu", 0)}')
+	gpus = cfg.pull('gpu', int(cfg.pull('gpu-ram', 0, silent=True) > 0))
+	if gpus > 0:
+		sub.append(f'request_gpus = {gpus}')
 
 		gpu_mem = cfg.pulls('gpu-mem', 'gpu-ram', 'gpu-memory', default=None)
 		if gpu_mem is not None:
@@ -472,7 +473,7 @@ periodic_hold_subcode = 1''')
 		submission_command = f'condor_submit_bid {bid} {path / "submit.sub"}'
 		out, err = run_command(submission_command, location=location)
 
-		ID = out.split('submitted to cluster ')[-1].strip() if 'submitted to cluster ' in out else None
+		ID = out.split('submitted to cluster ')[-1].strip().replace('.', '') if 'submitted to cluster ' in out else None
 
 		if not ID:
 			cfg.print(f'WARNING: Job {name} not submitted because no ID was returned')
