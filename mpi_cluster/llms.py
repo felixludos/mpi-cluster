@@ -305,17 +305,13 @@ def set_all_offline(cfg: fig.Configuration):
 				line = ['offline', now, item['model'], item['host'], item['port'], item['pid'], item['id']]
 				updates.append('\t'.join(map(str, line)))
 		if updates:
-			print('*'*50)
-			print(load_file(path, loc))
 			append_to_file('\n'.join(updates) + '\n', path, location=loc)
-			print('*'*50)
-			print(load_file(path, loc))
-			print('*'*50)
 			fixes[loc] += len(updates)
 
 	total = sum(fixes.values())
 	print(f'Set {total} entries to offline')
-	print(tabulate([[loc, count] for loc, count in fixes.items() if count > 0], headers=['Location', 'Count']))
+	if total:
+		print(tabulate([[loc, count] for loc, count in fixes.items() if count > 0], headers=['Location', 'Count']))
 
 
 

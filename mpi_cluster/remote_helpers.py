@@ -68,10 +68,6 @@ def run_command(command: str, location: str = None, *, append_path: Optional[Pat
 	b = f'bash -ic "{wrap_string(r)}"'
 	full = f"ssh {location} '{b}'"
 
-	print(r)
-
-	print(full)
-
 	res = subprocess.run(
 		full,
 		shell=True,
@@ -79,8 +75,6 @@ def run_command(command: str, location: str = None, *, append_path: Optional[Pat
 		text=True,
 	)
 	raw = res.stdout
-
-	print(res.stderr)
 
 	output = []
 	for line in raw.split('\n'):
