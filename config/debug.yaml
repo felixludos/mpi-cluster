@@ -14,7 +14,8 @@
 
 ##########################
 
-_meta.script_name: serving
+#_meta.script_name: serving
+_meta.script_name: all-offline
 
 _base: [all]
 

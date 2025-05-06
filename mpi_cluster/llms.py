@@ -299,12 +299,18 @@ def set_all_offline(cfg: fig.Configuration):
 
 	for loc, path in locations.items():
 		updates = []
-		for item in load_serving_log(path, loc).values():
-			if item['status'] == 'live':
+		items = load_serving_log(path, loc)
+		for item in items.values():
+			if item['status'] == 'waiting' or item['status'] == 'loading':
 				line = ['offline', now, item['model'], item['host'], item['port'], item['pid'], item['id']]
 				updates.append('\t'.join(map(str, line)))
 		if updates:
+			print('*'*50)
+			print(load_file(path, loc))
 			append_to_file('\n'.join(updates) + '\n', path, location=loc)
+			print('*'*50)
+			print(load_file(path, loc))
+			print('*'*50)
 			fixes[loc] += len(updates)
 
 	total = sum(fixes.values())

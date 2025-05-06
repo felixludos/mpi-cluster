@@ -16,7 +16,7 @@ def _generic_run(command, output_prefix='__output_tag_code__', error_prefix='__e
 	"""
 	if append_path is not None:
 		print(f'Appending to {append_path}:\n{command}')
-		append_path = Path(append_path)
+		append_path = Path(append_path).resolve().expanduser().absolute()
 		with append_path.open('a') as f:
 			f.write(command)
 		return
@@ -68,6 +68,10 @@ def run_command(command: str, location: str = None, *, append_path: Optional[Pat
 	b = f'bash -ic "{wrap_string(r)}"'
 	full = f"ssh {location} '{b}'"
 
+	print(r)
+
+	print(full)
+
 	res = subprocess.run(
 		full,
 		shell=True,
@@ -75,6 +79,8 @@ def run_command(command: str, location: str = None, *, append_path: Optional[Pat
 		text=True,
 	)
 	raw = res.stdout
+
+	print(res.stderr)
 
 	output = []
 	for line in raw.split('\n'):
@@ -123,8 +129,8 @@ def append_to_file(text: str, path: Path, location=None):
 	return path
 
 
-_file_cache = misc.repo_root().joinpath('assets', 'file_cache.json') # for debugging with pycharm
 _file_cache = None
+# _file_cache = misc.repo_root().joinpath('assets', 'file_cache.json') # for debugging with pycharm
 def load_file(path: Union[str, Path], location: str = None) -> str:
 	text = None
 	cache = None
