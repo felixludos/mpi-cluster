@@ -168,7 +168,8 @@ def make_serving_table(data, columns, online_only=False):
 		if isinstance(val, float):
 			return f'{val:.2f}'
 		if key == 'started':
-			return '--' if val is None else val.strftime('%b-%-d %H:%M:%S')
+			# return '--' if val is None else val.strftime('%b-%-d %H:%M:%S')
+			return '--' if val is None else val.strftime('%b %-d %H:%M')
 		if key == 'status':
 			return f'[{status_color.get(val,"red")}]{val.upper()}'
 		if key == 'loc':
@@ -229,8 +230,10 @@ def load_serving_log(path, location=None):
 		if 'live' in info['events']:
 			return f"http://{info.get('host', 'localhost')}:{info['port']}"
 	def compute_started(info):
-		if 'live' in info['events']:
-			return info['events']['live']
+		if 'start' in info['events']:
+			return info['events']['start']
+		# if 'live' in info['events']:
+		# 	return info['events']['live']
 	def compute_needs_tunnel(info):
 		if 'live' in info['events']:
 			return info.get('host', 'localhost') != info['location'].split('@')[-1]
@@ -320,20 +323,15 @@ def view_serving(cfg: fig.Configuration):
 	silent = cfg.pull('silent', False, silent=True)
 	cfg.silent = silent
 
-	only_active = cfg.pull('only-active', False, silent=True)
+	scan_freq = cfg.pull('scan', 60)
+
+	only_active = cfg.pull('only-active', False)
 
 	logpath = cfg.pull('logpath', '~/vllm.log')
 	locations = cfg.pull('locations', [])
 	if isinstance(locations, list):
 		locations = {loc: logpath for loc in locations}
 	locations[None] = logpath
-
-	log = []
-	for loc, path in locations.items():
-		log.extend(load_serving_log(path, loc).values())
-
-	if only_active:
-		log = [item for item in log if item['status'] in {'online', 'loading', 'waiting'}]
 
 	# autotunnel = cfg.pull('tunnel', True)
 	# _default_columns = ['status', 'duration', 'model', 'url', 'tunnel'] if autotunnel
@@ -393,24 +391,25 @@ def view_serving(cfg: fig.Configuration):
 
 	# view serving
 	async def check_server(item):
-		if item['status'] == 'loading':
-			return
 		try:
-			while item['status'] == 'waiting':
-				if item.get('needs_tunnel', item['location'] is not None) and 'tunnel' not in item:
-					create_tunnel(item)
-					url = item.get('tunnel')
+			while True:# item['status'] == 'waiting':
+				if item.get('needs_tunnel', item['location'] is not None):
+					if 'tunnel' not in item:
+						create_tunnel(item)
+					url = item['tunnel']
 				else:
 					url = item['url']
-				if url is not None:
-					async with httpx.AsyncClient(timeout=3.0) as client:
-						response = await client.get(f'{url}/ping')
-						if response.status_code < 500:
-							item['status'] = 'online'
-							return
-						elif item['status'] == 'waiting':
-							break
+				async with httpx.AsyncClient(timeout=3.0) as client:
+					response = await client.get(f'{url}/ping')
+					if response.status_code < 500:
+						item['status'] = 'online'
+						return
+					elif item['status'] == 'waiting':
+						break
+					# not sure what other outcomes there are
 				await asyncio.sleep(1)
+		except asyncio.CancelledError:
+			return
 		except:
 			pass
 		item['status'] = 'offline'
@@ -420,34 +419,64 @@ def view_serving(cfg: fig.Configuration):
 
 	stop_event = asyncio.Event()
 	def handle_sigint():
-		print("\n[!] Keyboard interrupt received. Exiting...")
 		stop_event.set()
 
 	async def view_serving():
-		with Live(make_serving_table(log, columns, online_only=only_active), refresh_per_second=4) as live:
-			tasks = [asyncio.create_task(check_server(item)) for item in log]
-			while any(item['status'] == "waiting" or item['status'] == 'loading' for item in log):
-				await asyncio.sleep(0.2)
-				live.update(make_serving_table(log, columns, online_only=only_active))
+		progress = {}
+		tasks = []
+		try:
+			with Live(make_serving_table([], columns, online_only=only_active), refresh_per_second=4) as live:
+				while scan_freq is not None and scan_freq > 0:
+					log = []
+					for loc, path in locations.items():
+						log.extend(load_serving_log(path, loc).values())
+
+					if only_active:
+						log = [item for item in log if item['status'] in {'online', 'loading', 'waiting'}]
+
+					todo = [item for item in log if item['status'] == 'waiting']
+					for item in todo:
+						if item['id'] in progress:
+							item['status'] = progress[item['id']]['status']
+							if 'tunnel' in progress[item['id']]:
+								item['tunnel'] = progress[item['id']]['tunnel']
+								item['tunnel_obj'] = progress[item['id']]['tunnel_obj']
+
+					tasks.extend(asyncio.create_task(check_server(item)) for item in todo)
+
+					while any(not task.done() for task in tasks):
+						await asyncio.sleep(0.2)
+						live.update(make_serving_table(log, columns, online_only=only_active))
+					await asyncio.gather(*tasks)
+					tasks.clear()
+					# print("\033c", end="")
+					# height = shutil.get_terminal_size().lines
+					# print("\n" * height)
+					live.update(make_serving_table(log, columns, online_only=only_active))  # final update
+
+					progress.update({item['id']: item for item in log})
+
+		except (KeyboardInterrupt, asyncio.CancelledError):
+			print("\n[!] Keyboard interrupt received. Exiting...")
+			for task in tasks:
+				task.cancel()
 			await asyncio.gather(*tasks)
-			# print("\033c", end="")
-			# height = shutil.get_terminal_size().lines
-			# print("\n" * height)
-			live.update(make_serving_table(log, columns, online_only=only_active))  # final update
+		else:
+			loop = asyncio.get_running_loop()
+			loop.add_signal_handler(signal.SIGINT, handle_sigint)
+			print("[Not scanning] Press Ctrl+C to stop...")
+			await stop_event.wait()
+			print("\n[!] Keyboard interrupt received. Exiting...")
 
-		loop = asyncio.get_running_loop()
-		loop.add_signal_handler(signal.SIGINT, handle_sigint)
-
-		print("Press Ctrl+C to stop...")
-		await stop_event.wait()
-		# print("Cleanup complete.")
-
-	try:
-		asyncio.run(view_serving())
-	finally:
 		for item in log:
 			if 'tunnel_obj' in item:
 				item['tunnel_obj'].stop()
+				del item['tunnel'], item['tunnel_obj']
+		print("Cleanup complete.")
+		return log
+
+	log = asyncio.run(view_serving())
+	return log
 
 
 
