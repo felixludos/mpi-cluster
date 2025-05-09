@@ -156,7 +156,7 @@ def make_serving_table(data, columns, online_only=False):
 		table.add_column(col, **style)
 	# table.add_column("Server", style="cyan", no_wrap=True)
 	# table.add_column("Status", style="bold")
-	status_color = {'ended': 'grey', 'error': 'red', 'unknown': 'red', 'offline': 'red',
+	status_color = {'ended': 'grey', 'error': 'red', 'unknown': 'red', 'offline': 'grey',
 					'loading': 'blue', 'waiting': 'cyan', 'online': 'green'}
 	def _display(item, key, val):
 		if key == 'duration':
@@ -164,6 +164,7 @@ def make_serving_table(data, columns, online_only=False):
 				val = (datetime.now() - item['events']['live']).total_seconds() #/ 3600
 			return '--' if val is None else humanize.naturaldelta(val)
 		if key == 'startup':
+			return '--' if val is None else f'{val/60:.1f}'
 			return '--' if val is None else humanize.naturaldelta(val)
 		if isinstance(val, float):
 			return f'{val:.2f}'
@@ -192,7 +193,8 @@ def make_serving_table(data, columns, online_only=False):
 	data = sort_serving_data(data)
 
 	for item in data:
-		table.add_row(*[_display(item, col, item.get(col)) for col in columns.keys()])
+		table.add_row(*[_display(item, col, item.get(col)) for col in columns.keys()],
+					  style="grey50" if item['status'] in {'offline', 'ended', 'error'} else "white")
 	return table
 
 def sort_serving_data(data):
@@ -320,6 +322,7 @@ def set_all_offline(cfg: fig.Configuration):
 
 @fig.script('serving', description='Get information about currently active servers')
 def view_serving(cfg: fig.Configuration):
+	# headless = cfg.pull('headless', False, silent=True) # TODO
 	silent = cfg.pull('silent', False, silent=True)
 	cfg.silent = silent
 
@@ -445,7 +448,7 @@ def view_serving(cfg: fig.Configuration):
 					tasks.extend(asyncio.create_task(check_server(item)) for item in todo)
 
 					while any(not task.done() for task in tasks):
-						await asyncio.sleep(0.2)
+						await asyncio.sleep(0.5)
 						live.update(make_serving_table(log, columns, online_only=only_active))
 					await asyncio.gather(*tasks)
 					tasks.clear()
