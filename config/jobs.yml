@@ -11,7 +11,7 @@ bid: 50
 ram: 64
 cpu: 4
 
-command-path: /fast/fleeb/venice-todo.sh
+command-path: /fast/fleeb/venice/todo.sh
 # template-path: /home/fleeb/workspace/code/mpi-cluster/data/template.sh
 #working-dir: /home/fleeb/workspace/code/alphageometry
 working-dir: /home/fleeb/workspace/code/ludwig
