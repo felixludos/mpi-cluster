@@ -136,7 +136,7 @@ def launch_llm(cfg: fig.Configuration):
 	if settings is None:
 		raise KeyError(f'no such model settings found {ident!r}')
 	
-	known_vllm_args = set(key for items in settings.values() for key in items.keys())
+	known_vllm_args = set(key for items in acc.values() for key in items.keys())
 	update = {}
 	novalue = object()
 	for key in known_vllm_args:
