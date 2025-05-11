@@ -37,6 +37,34 @@ def get_gpu_info(location: str = None) -> Optional[List[Dict[str, Union[str, int
 	return devices
 
 
+@fig.script('vllm-ids')
+def vllm_ids(cfg: fig.Configuration):
+	"""
+	Get the list of available vllm ids.
+
+	Args:
+		cfg (fig.Configuration): The configuration object.
+
+	Returns:
+		None
+	"""
+
+	details = cfg.pulls('details', 'verbose', 'v', default=False, silent=True)
+
+	acc_path = repo_root().joinpath('assets', 'vllm-settings.yml')
+	acc = load_yaml(acc_path)
+
+	if details:
+		for key, item in acc.items():
+			print(f'{colorize(key, "green")}')
+			print(tabulate([(arg, val) for arg, val in item.items()], headers=['Param', 'Value']))
+			print()
+
+	nametbl = [(key, item.get('model')) for key, item in acc.items()]
+	cfg.print(tabulate(nametbl, headers=['ID', 'Model']))
+
+	return acc
+
 
 @fig.script('launch', description='Launch a vllm server through the cluster (usually remote)')
 def launch_llm(cfg: fig.Configuration):
@@ -57,7 +85,7 @@ def launch_llm(cfg: fig.Configuration):
 		if is_cluster(host) else f'launch on {host}'
 	print(f'Currently on {me} - {_local_msg}')
 
-	model = cfg.pull('model', None)
+	ident = cfg.pulls('ident', 'id', default=None)
 
 	gpu_devices = get_gpu_info(location)
 	total_gpu_ram = sum([d['ram'] for d in gpu_devices]) if gpu_devices is not None else 0
@@ -89,24 +117,35 @@ def launch_llm(cfg: fig.Configuration):
 		for item in items]
 		print(tabulate(tbl))
 
-		while model is None:
-			model = input('Select a model> ').strip()
-			if model not in available:
+		while ident is None:
+			ident = input('Select a ident> ').strip()
+			if ident not in available:
 				try:
-					model = int(model)
+					ident = int(ident)
 				except ValueError:
-					model = None
+					ident = None
 				else:
-					if model < 0 or model >= len(items):
-						model = None
+					if ident < 0 or ident >= len(items):
+						ident = None
 					else:
-						model = items[model]['key']
+						ident = items[ident]['key']
 
 	vllm_dir = cfg.pull('vllm-dir', '/home/fleeb/workspace/code/clones/vllm')
 
-	settings = acc.get(model, None)
+	settings = acc.get(ident, None)
 	if settings is None:
-		raise KeyError(f'no such model settings found {model}')
+		raise KeyError(f'no such model settings found {ident!r}')
+	
+	known_vllm_args = set(key for items in settings.values() for key in items.keys())
+	update = {}
+	novalue = object()
+	for key in known_vllm_args:
+		value = cfg.pull(key, novalue, silent=True)
+		if value is not novalue:
+			update[key] = value
+	if len(update) > 0:
+		print(f'Overriding {len(update)} vllm args:\n{tabulate(update.items())}')
+		settings.update(update)
 
 	port = cfg.pull('port', None)
 
