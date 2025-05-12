@@ -21,7 +21,7 @@ qwen8b:
 qwen32b:
   model: Qwen/Qwen3-32B
   dtype: bfloat16
-  gpu-memory-utilization: 0.95
+  gpu-memory-utilization: 0.90
   max-model-len: 65536
   max-num-seqs: 1
   enable-reasoning: yes
@@ -31,7 +31,7 @@ qwen32b:
 mistral7b:
   model: mistralai/Mistral-7B-Instruct-v0.3
   dtype: bfloat16
-  gpu-memory-utilization: 0.95
+  gpu-memory-utilization: 0.9
   max-model-len: 16384
   max-num-seqs: 1
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
@@ -39,7 +39,7 @@ mistral7b:
 llama70b:
   model: meta-llama/Llama-3.3-70B-Instruct
   dtype: bfloat16
-  gpu-memory-utilization: 0.95
+  gpu-memory-utilization: 0.9
   max-model-len: 65536
   max-num-seqs: 4
   tensor-parallel-size: 2
@@ -48,17 +48,17 @@ llama70b:
   chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
 
-llama70b-small:
+llama70b-8gpu:
   model: meta-llama/Llama-3.3-70B-Instruct
   dtype: bfloat16
   gpu-memory-utilization: 0.9
   max-model-len: 32768
   max-num-seqs: 8
-  tensor-parallel-size: 6
+  tensor-parallel-size: 8
   enable-auto-tool-choice: yes
   tool-call-parser: llama3_json
   chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
-  resources: {cpu: 8, ram: 256, gpu: 6, gpu-ram: 28}
+  resources: {cpu: 8, ram: 256, gpu: 8, gpu-ram: 20}
 
 llama8b:
   model: meta-llama/Llama-3.1-8B-Instruct
@@ -70,6 +70,17 @@ llama8b:
   tool-call-parser: llama3_json
   chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 20}
+
+llama8b-large:
+  model: meta-llama/Llama-3.1-8B-Instruct
+  dtype: bfloat16
+  gpu-memory-utilization: 0.90
+  # max-model-len: 16384
+  max-num-seqs: 32
+  enable-auto-tool-choice: yes
+  tool-call-parser: llama3_json
+  chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 80}
 
 llama1b:
   model: meta-llama/Llama-3.2-1B-Instruct
