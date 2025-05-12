@@ -278,6 +278,9 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 
 	interactive = cfg.pulls('interactive', 'i', default=False)
 
+	update_cmds = False
+	include_cmds = False
+
 	if interactive:
 		assert commands is None, f'Commands provided, but interactive mode is enabled'
 		commands = []
@@ -292,6 +295,10 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 
 		if commands is None:
 			cmd_path = cfg.pulls('command-path', 'cmd-path', 'path', default=None)
+			
+
+			update_cmds = cfg.pull('update-cmds', True)
+			include_cmds = cfg.pull('include-cmds', False)
 			if cmd_path:
 				cmd_path = Path(cmd_path)
 				if root:
@@ -498,6 +505,25 @@ periodic_hold_subcode = 1''')
 		}
 
 		append_to_file(f'{json.dumps(manifest_entry)}\n', path=manifest_path, location=location)
+
+		
+		if update_cmds and cmd_path is not None:
+			cmd_lines = cmd_path.read_text().split('\n')
+
+			fixed = []
+			i = 0
+			for line in cmd_lines:
+				cmddata = line.strip()
+				if len(cmddata) and cmddata[0] != '#':
+					myid = i if ID is None else f'{ID}.{i}'
+					fixed.append(f'#{line} # {name} {myid}')
+					i += 1
+				else:
+					fixed.append(line)
+			fixed = '\n'.join(fixed)
+
+			cmd_path.write_text(fixed)
+
 
 		cfg.print(f'Job {name} submitted: {bid}')
 		return name
