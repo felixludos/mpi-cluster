@@ -48,6 +48,18 @@ llama70b:
   chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
 
+llama70b-small:
+  model: meta-llama/Llama-3.3-70B-Instruct
+  dtype: bfloat16
+  gpu-memory-utilization: 0.9
+  max-model-len: 32768
+  max-num-seqs: 8
+  tensor-parallel-size: 6
+  enable-auto-tool-choice: yes
+  tool-call-parser: llama3_json
+  chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  resources: {cpu: 32, ram: 256, gpu: 6, gpu-ram: 28, gpu-name: [V100]}
+
 llama8b:
   model: meta-llama/Llama-3.1-8B-Instruct
   dtype: bfloat16
