@@ -58,7 +58,7 @@ llama70b-small:
   enable-auto-tool-choice: yes
   tool-call-parser: llama3_json
   chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
-  resources: {cpu: 32, ram: 256, gpu: 6, gpu-ram: 28}
+  resources: {cpu: 8, ram: 256, gpu: 6, gpu-ram: 28}
 
 llama8b:
   model: meta-llama/Llama-3.1-8B-Instruct
