@@ -9,8 +9,13 @@ silent: yes
 columns:
   status: yes
   model: yes
-  loc: yes
   address: yes
   started: yes
   duration: yes
-  startup: yes
+  # startup: yes
+  loc: yes
+  port: yes
+
+
+
+
