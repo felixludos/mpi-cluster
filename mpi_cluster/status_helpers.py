@@ -124,6 +124,7 @@ def process_data_table(file_text: str, cols=None, include_event=None):
 	return jobs
 
 
+import humanize
 
 def compute_durations(info, sig1='start', sig2='end', now=None):
 	if 'events' not in info:
@@ -167,7 +168,8 @@ def compute_durations(info, sig1='start', sig2='end', now=None):
 	if wait is not None:
 		info['wait'] = wait.total_seconds() / 3600
 	if wall is not None:
-		info['duration'] = wall.total_seconds() / 3600
+		# info['duration'] = wall.total_seconds() / 3600
+		info['duration'] = humanize.naturaldelta(wall)
 
 
 def sort_jobkeys(sort_by, jobs):

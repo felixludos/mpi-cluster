@@ -4,3 +4,13 @@ locations:
   - fleeb@wagner.is.localnet
 
 silent: yes
+
+# ['status', 'model', 'loc', 'address', 'started', 'duration', 'startup']
+columns:
+  status: yes
+  model: yes
+  loc: yes
+  address: yes
+  started: yes
+  duration: yes
+  startup: yes
