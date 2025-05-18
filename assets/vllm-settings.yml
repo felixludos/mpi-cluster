@@ -1,5 +1,16 @@
 
-phi4:
+
+phi4-r:
+  model: microsoft/Phi-4-reasoning
+  dtype: bfloat16
+  gpu-memory-utilization: 0.9
+  trust-remote-code: yes
+  # max-model-len: 65536
+  # max-num-seqs: 4
+  resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 80}
+
+
+phi4-mm:
   model: microsoft/Phi-4-multimodal-instruct
   dtype: bfloat16
   gpu-memory-utilization: 0.95
@@ -8,7 +19,7 @@ phi4:
   max-num-seqs: 4
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
 
-phi4-large:
+phi4-mm-large:
   model: microsoft/Phi-4-multimodal-instruct
   dtype: bfloat16
   gpu-memory-utilization: 0.90
@@ -69,12 +80,37 @@ llama70b-8gpu:
   chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 8, ram: 256, gpu: 8, gpu-ram: 20}
 
+llama4:
+  model: meta-llama/Llama-4-Scout-17B-16E-Instruct
+  dtype: bfloat16
+  gpu-memory-utilization: 0.9
+  # max-num-seqs: 64
+  max-model-len: 65536
+  tensor-parallel-size: 4
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  resources: {cpu: 32, ram: 256, gpu: 4, gpu-ram: 80}
+
+llama4-mav:
+  model: meta-llama/Llama-4-Maverick-17B-128E-Instruct
+  dtype: bfloat16
+  # gpu-memory-utilization: 0.9
+  # max-num-seqs: 64
+  max-model-len: 430000
+  tensor-parallel-size: 8
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 80}
+
+
 llama8b:
   model: meta-llama/Llama-3.1-8B-Instruct
   dtype: bfloat16
   gpu-memory-utilization: 0.9
   max-model-len: 16384
-  max-num-seqs: 4
+  # max-num-seqs: 4
   enable-auto-tool-choice: yes
   tool-call-parser: llama3_json
   chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
@@ -119,6 +155,14 @@ gemma27b:
   # max-model-len: 65536
   # max-num-seqs: 8
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 80}
+
+gemma4b:
+  model: google/gemma-3-4b-it
+  dtype: bfloat16
+  # gpu-memory-utilization: 0.90
+  # max-model-len: 65536
+  # max-num-seqs: 8
+  resources: {cpu: 8, ram: 64, gpu: 1, gpu-ram: 20}
 
 r1qwen32b:
   model: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B

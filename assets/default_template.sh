@@ -21,6 +21,7 @@ echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)" >> {job_dir}/star
 #nvidia-smi
 #ls
 # conda install -c eumetsat expect
+# export VLLM_DISABLE_COMPILE_CACHE=1
 
 {command}
 
