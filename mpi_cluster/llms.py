@@ -596,8 +596,9 @@ def start_vllm_server(cfg: fig.Configuration):
 
 	# log server launch with columns: [event, timestamp, model, host, port, pid, jobid]
 	launch_message = ['start', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
-	with logpath.open('a') as f:
-		f.write('\t'.join(map(str, launch_message)) + '\n')
+	if not cfg.pull('dump-args', False, silent=True):
+		with logpath.open('a') as f:
+			f.write('\t'.join(map(str, launch_message)) + '\n')
 
 	import threading
 	from vllm.entrypoints.openai.api_server import logger, VLLM_VERSION, \
