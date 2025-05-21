@@ -1,0 +1,688 @@
+[
+  {
+    "name": "host",
+    "option": "--host",
+    "default": null
+  },
+  {
+    "name": "port",
+    "option": "--port",
+    "default": 8000
+  },
+  {
+    "name": "uvicorn-log-level",
+    "option": "--uvicorn-log-level",
+    "default": "info"
+  },
+  {
+    "name": "disable-uvicorn-access-log",
+    "option": "--disable-uvicorn-access-log",
+    "default": false
+  },
+  {
+    "name": "allow-credentials",
+    "option": "--allow-credentials",
+    "default": false
+  },
+  {
+    "name": "allowed-origins",
+    "option": "--allowed-origins",
+    "default": [
+      "*"
+    ]
+  },
+  {
+    "name": "allowed-methods",
+    "option": "--allowed-methods",
+    "default": [
+      "*"
+    ]
+  },
+  {
+    "name": "allowed-headers",
+    "option": "--allowed-headers",
+    "default": [
+      "*"
+    ]
+  },
+  {
+    "name": "api-key",
+    "option": "--api-key",
+    "default": null
+  },
+  {
+    "name": "lora-modules",
+    "option": "--lora-modules",
+    "default": null
+  },
+  {
+    "name": "prompt-adapters",
+    "option": "--prompt-adapters",
+    "default": null
+  },
+  {
+    "name": "chat-template",
+    "option": "--chat-template",
+    "default": null
+  },
+  {
+    "name": "chat-template-content-format",
+    "option": "--chat-template-content-format",
+    "default": "auto"
+  },
+  {
+    "name": "response-role",
+    "option": "--response-role",
+    "default": "assistant"
+  },
+  {
+    "name": "ssl-keyfile",
+    "option": "--ssl-keyfile",
+    "default": null
+  },
+  {
+    "name": "ssl-certfile",
+    "option": "--ssl-certfile",
+    "default": null
+  },
+  {
+    "name": "ssl-ca-certs",
+    "option": "--ssl-ca-certs",
+    "default": null
+  },
+  {
+    "name": "enable-ssl-refresh",
+    "option": "--enable-ssl-refresh",
+    "default": false
+  },
+  {
+    "name": "ssl-cert-reqs",
+    "option": "--ssl-cert-reqs",
+    "default": 0
+  },
+  {
+    "name": "root-path",
+    "option": "--root-path",
+    "default": null
+  },
+  {
+    "name": "middleware",
+    "option": "--middleware",
+    "default": []
+  },
+  {
+    "name": "return-tokens-as-token-ids",
+    "option": "--return-tokens-as-token-ids",
+    "default": false
+  },
+  {
+    "name": "disable-frontend-multiprocessing",
+    "option": "--disable-frontend-multiprocessing",
+    "default": false
+  },
+  {
+    "name": "enable-request-id-headers",
+    "option": "--enable-request-id-headers",
+    "default": false
+  },
+  {
+    "name": "enable-auto-tool-choice",
+    "option": "--enable-auto-tool-choice",
+    "default": false
+  },
+  {
+    "name": "tool-call-parser",
+    "option": "--tool-call-parser",
+    "default": null
+  },
+  {
+    "name": "tool-parser-plugin",
+    "option": "--tool-parser-plugin",
+    "default": ""
+  },
+  {
+    "name": "model",
+    "option": "--model",
+    "default": "facebook/opt-125m"
+  },
+  {
+    "name": "task",
+    "option": "--task",
+    "default": "auto"
+  },
+  {
+    "name": "tokenizer",
+    "option": "--tokenizer",
+    "default": null
+  },
+  {
+    "name": "hf-config-path",
+    "option": "--hf-config-path",
+    "default": null
+  },
+  {
+    "name": "skip-tokenizer-init",
+    "option": "--skip-tokenizer-init",
+    "default": false
+  },
+  {
+    "name": "revision",
+    "option": "--revision",
+    "default": null
+  },
+  {
+    "name": "code-revision",
+    "option": "--code-revision",
+    "default": null
+  },
+  {
+    "name": "tokenizer-revision",
+    "option": "--tokenizer-revision",
+    "default": null
+  },
+  {
+    "name": "tokenizer-mode",
+    "option": "--tokenizer-mode",
+    "default": "auto"
+  },
+  {
+    "name": "trust-remote-code",
+    "option": "--trust-remote-code",
+    "default": false
+  },
+  {
+    "name": "allowed-local-media-path",
+    "option": "--allowed-local-media-path",
+    "default": null
+  },
+  {
+    "name": "load-format",
+    "option": "--load-format",
+    "default": "auto"
+  },
+  {
+    "name": "download-dir",
+    "option": "--download-dir",
+    "default": null
+  },
+  {
+    "name": "model-loader-extra-config",
+    "option": "--model-loader-extra-config",
+    "default": {}
+  },
+  {
+    "name": "use-tqdm-on-load",
+    "option": "--use-tqdm-on-load",
+    "default": true
+  },
+  {
+    "name": "config-format",
+    "option": "--config-format",
+    "default": "auto"
+  },
+  {
+    "name": "dtype",
+    "option": "--dtype",
+    "default": "auto"
+  },
+  {
+    "name": "max-model-len",
+    "option": "--max-model-len",
+    "default": null
+  },
+  {
+    "name": "guided-decoding-backend",
+    "option": "--guided-decoding-backend",
+    "default": "auto"
+  },
+  {
+    "name": "reasoning-parser",
+    "option": "--reasoning-parser",
+    "default": null
+  },
+  {
+    "name": "logits-processor-pattern",
+    "option": "--logits-processor-pattern",
+    "default": null
+  },
+  {
+    "name": "model-impl",
+    "option": "--model-impl",
+    "default": "auto"
+  },
+  {
+    "name": "distributed-executor-backend",
+    "option": "--distributed-executor-backend",
+    "default": null
+  },
+  {
+    "name": "pipeline-parallel-size",
+    "option": "--pipeline-parallel-size",
+    "default": 1
+  },
+  {
+    "name": "tensor-parallel-size",
+    "option": "--tensor-parallel-size",
+    "default": 1
+  },
+  {
+    "name": "data-parallel-size",
+    "option": "--data-parallel-size",
+    "default": 1
+  },
+  {
+    "name": "enable-expert-parallel",
+    "option": "--enable-expert-parallel",
+    "default": false
+  },
+  {
+    "name": "max-parallel-loading-workers",
+    "option": "--max-parallel-loading-workers",
+    "default": null
+  },
+  {
+    "name": "ray-workers-use-nsight",
+    "option": "--ray-workers-use-nsight",
+    "default": false
+  },
+  {
+    "name": "disable-custom-all-reduce",
+    "option": "--disable-custom-all-reduce",
+    "default": false
+  },
+  {
+    "name": "block-size",
+    "option": "--block-size",
+    "default": null
+  },
+  {
+    "name": "gpu-memory-utilization",
+    "option": "--gpu-memory-utilization",
+    "default": 0.9
+  },
+  {
+    "name": "swap-space",
+    "option": "--swap-space",
+    "default": 4
+  },
+  {
+    "name": "kv-cache-dtype",
+    "option": "--kv-cache-dtype",
+    "default": "auto"
+  },
+  {
+    "name": "num-gpu-blocks-override",
+    "option": "--num-gpu-blocks-override",
+    "default": null
+  },
+  {
+    "name": "enable-prefix-caching",
+    "option": "--enable-prefix-caching",
+    "default": null
+  },
+  {
+    "name": "prefix-caching-hash-algo",
+    "option": "--prefix-caching-hash-algo",
+    "default": "builtin"
+  },
+  {
+    "name": "cpu-offload-gb",
+    "option": "--cpu-offload-gb",
+    "default": 0
+  },
+  {
+    "name": "calculate-kv-scales",
+    "option": "--calculate-kv-scales",
+    "default": false
+  },
+  {
+    "name": "disable-sliding-window",
+    "option": "--disable-sliding-window",
+    "default": false
+  },
+  {
+    "name": "use-v2-block-manager",
+    "option": "--use-v2-block-manager",
+    "default": true
+  },
+  {
+    "name": "seed",
+    "option": "--seed",
+    "default": null
+  },
+  {
+    "name": "max-logprobs",
+    "option": "--max-logprobs",
+    "default": 20
+  },
+  {
+    "name": "disable-log-stats",
+    "option": "--disable-log-stats",
+    "default": false
+  },
+  {
+    "name": "quantization",
+    "option": "--quantization",
+    "default": null
+  },
+  {
+    "name": "rope-scaling",
+    "option": "--rope-scaling",
+    "default": null
+  },
+  {
+    "name": "rope-theta",
+    "option": "--rope-theta",
+    "default": null
+  },
+  {
+    "name": "hf-token",
+    "option": "--hf-token",
+    "default": null
+  },
+  {
+    "name": "hf-overrides",
+    "option": "--hf-overrides",
+    "default": null
+  },
+  {
+    "name": "enforce-eager",
+    "option": "--enforce-eager",
+    "default": false
+  },
+  {
+    "name": "max-seq-len-to-capture",
+    "option": "--max-seq-len-to-capture",
+    "default": 8192
+  },
+  {
+    "name": "tokenizer-pool-size",
+    "option": "--tokenizer-pool-size",
+    "default": 0
+  },
+  {
+    "name": "tokenizer-pool-type",
+    "option": "--tokenizer-pool-type",
+    "default": "ray"
+  },
+  {
+    "name": "tokenizer-pool-extra-config",
+    "option": "--tokenizer-pool-extra-config",
+    "default": {}
+  },
+  {
+    "name": "limit-mm-per-prompt",
+    "option": "--limit-mm-per-prompt",
+    "default": {}
+  },
+  {
+    "name": "mm-processor-kwargs",
+    "option": "--mm-processor-kwargs",
+    "default": null
+  },
+  {
+    "name": "disable-mm-preprocessor-cache",
+    "option": "--disable-mm-preprocessor-cache",
+    "default": false
+  },
+  {
+    "name": "enable-lora",
+    "option": "--enable-lora",
+    "default": null
+  },
+  {
+    "name": "enable-lora-bias",
+    "option": "--enable-lora-bias",
+    "default": false
+  },
+  {
+    "name": "max-loras",
+    "option": "--max-loras",
+    "default": 1
+  },
+  {
+    "name": "max-lora-rank",
+    "option": "--max-lora-rank",
+    "default": 16
+  },
+  {
+    "name": "lora-extra-vocab-size",
+    "option": "--lora-extra-vocab-size",
+    "default": 256
+  },
+  {
+    "name": "lora-dtype",
+    "option": "--lora-dtype",
+    "default": "auto"
+  },
+  {
+    "name": "long-lora-scaling-factors",
+    "option": "--long-lora-scaling-factors",
+    "default": null
+  },
+  {
+    "name": "max-cpu-loras",
+    "option": "--max-cpu-loras",
+    "default": null
+  },
+  {
+    "name": "fully-sharded-loras",
+    "option": "--fully-sharded-loras",
+    "default": false
+  },
+  {
+    "name": "enable-prompt-adapter",
+    "option": "--enable-prompt-adapter",
+    "default": null
+  },
+  {
+    "name": "max-prompt-adapters",
+    "option": "--max-prompt-adapters",
+    "default": 1
+  },
+  {
+    "name": "max-prompt-adapter-token",
+    "option": "--max-prompt-adapter-token",
+    "default": 0
+  },
+  {
+    "name": "device",
+    "option": "--device",
+    "default": "auto"
+  },
+  {
+    "name": "speculative-config",
+    "option": "--speculative-config",
+    "default": null
+  },
+  {
+    "name": "ignore-patterns",
+    "option": "--ignore-patterns",
+    "default": []
+  },
+  {
+    "name": "served-model-name",
+    "option": "--served-model-name",
+    "default": null
+  },
+  {
+    "name": "qlora-adapter-name-or-path",
+    "option": "--qlora-adapter-name-or-path",
+    "default": null
+  },
+  {
+    "name": "show-hidden-metrics-for-version",
+    "option": "--show-hidden-metrics-for-version",
+    "default": null
+  },
+  {
+    "name": "otlp-traces-endpoint",
+    "option": "--otlp-traces-endpoint",
+    "default": null
+  },
+  {
+    "name": "collect-detailed-traces",
+    "option": "--collect-detailed-traces",
+    "default": null
+  },
+  {
+    "name": "disable-async-output-proc",
+    "option": "--disable-async-output-proc",
+    "default": false
+  },
+  {
+    "name": "max-num-batched-tokens",
+    "option": "--max-num-batched-tokens",
+    "default": null
+  },
+  {
+    "name": "max-num-seqs",
+    "option": "--max-num-seqs",
+    "default": null
+  },
+  {
+    "name": "max-num-partial-prefills",
+    "option": "--max-num-partial-prefills",
+    "default": 1
+  },
+  {
+    "name": "max-long-partial-prefills",
+    "option": "--max-long-partial-prefills",
+    "default": 1
+  },
+  {
+    "name": "long-prefill-token-threshold",
+    "option": "--long-prefill-token-threshold",
+    "default": 0
+  },
+  {
+    "name": "num-lookahead-slots",
+    "option": "--num-lookahead-slots",
+    "default": 0
+  },
+  {
+    "name": "scheduler-delay-factor",
+    "option": "--scheduler-delay-factor",
+    "default": 0.0
+  },
+  {
+    "name": "preemption-mode",
+    "option": "--preemption-mode",
+    "default": null
+  },
+  {
+    "name": "num-scheduler-steps",
+    "option": "--num-scheduler-steps",
+    "default": 1
+  },
+  {
+    "name": "multi-step-stream-outputs",
+    "option": "--multi-step-stream-outputs",
+    "default": true
+  },
+  {
+    "name": "scheduling-policy",
+    "option": "--scheduling-policy",
+    "default": "fcfs"
+  },
+  {
+    "name": "enable-chunked-prefill",
+    "option": "--enable-chunked-prefill",
+    "default": null
+  },
+  {
+    "name": "disable-chunked-mm-input",
+    "option": "--disable-chunked-mm-input",
+    "default": false
+  },
+  {
+    "name": "scheduler-cls",
+    "option": "--scheduler-cls",
+    "default": "vllm.core.scheduler.Scheduler"
+  },
+  {
+    "name": "override-neuron-config",
+    "option": "--override-neuron-config",
+    "default": null
+  },
+  {
+    "name": "override-pooler-config",
+    "option": "--override-pooler-config",
+    "default": null
+  },
+  {
+    "name": "compilation-config",
+    "option": "--compilation-config",
+    "default": null
+  },
+  {
+    "name": "kv-transfer-config",
+    "option": "--kv-transfer-config",
+    "default": null
+  },
+  {
+    "name": "worker-cls",
+    "option": "--worker-cls",
+    "default": "auto"
+  },
+  {
+    "name": "worker-extension-cls",
+    "option": "--worker-extension-cls",
+    "default": ""
+  },
+  {
+    "name": "generation-config",
+    "option": "--generation-config",
+    "default": "auto"
+  },
+  {
+    "name": "override-generation-config",
+    "option": "--override-generation-config",
+    "default": null
+  },
+  {
+    "name": "enable-sleep-mode",
+    "option": "--enable-sleep-mode",
+    "default": false
+  },
+  {
+    "name": "additional-config",
+    "option": "--additional-config",
+    "default": null
+  },
+  {
+    "name": "enable-reasoning",
+    "option": "--enable-reasoning",
+    "default": false
+  },
+  {
+    "name": "disable-cascade-attn",
+    "option": "--disable-cascade-attn",
+    "default": false
+  },
+  {
+    "name": "disable-log-requests",
+    "option": "--disable-log-requests",
+    "default": false
+  },
+  {
+    "name": "max-log-len",
+    "option": "--max-log-len",
+    "default": null
+  },
+  {
+    "name": "disable-fastapi-docs",
+    "option": "--disable-fastapi-docs",
+    "default": false
+  },
+  {
+    "name": "enable-prompt-tokens-details",
+    "option": "--enable-prompt-tokens-details",
+    "default": false
+  },
+  {
+    "name": "enable-server-load-tracking",
+    "option": "--enable-server-load-tracking",
+    "default": false
+  }
+]

@@ -132,10 +132,25 @@ def launch_llm(cfg: fig.Configuration):
 
 	vllm_dir = cfg.pull('vllm-dir', '/home/fleeb/workspace/code/clones/vllm')
 
-	settings = acc.get(ident, None)
+	settings = acc.get(ident, {})
 	if settings is None:
 		raise KeyError(f'no such model settings found {ident!r}')
 	
+	# should use flattened settings (for deeper updates)
+	arginfo = load_json(repo_root().joinpath('assets', 'vllm_args.json'))
+	argdefaults = {info['name']: info['default'] for info in arginfo if info['default'] is not None}
+
+	specified_args = collect_vllm_args(cfg, arginfo)
+
+	# set union of settings and specified args
+	allargs = set(settings.keys()).union(specified_args.keys())
+
+	tbl = [(key, settings.get(key, argdefaults.get(key, '')), specified_args.get(key, settings.get(key, ''))) for key in allargs]
+	print('Settings:')
+	print(tabulate(tbl, headers=['Arg', 'Default', 'Specified']))
+
+	settings.update(specified_args)
+
 	known_vllm_args = set(key for items in acc.values() for key in items.keys())
 	update = {}
 	novalue = object()
@@ -184,7 +199,6 @@ from sshtunnel import SSHTunnelForwarder
 from rich.live import Live
 from rich.table import Table
 from rich import box
-
 
 def make_serving_table(data, columns, online_only=False):
 	if not isinstance(columns, dict):
@@ -538,25 +552,28 @@ def argdict2argv(args: Dict[str, Any]) -> List[str]:
 	return argv
 
 
-
-def collect_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
-	arginfo = [{'name': action.dest.replace('_', '-'), 'option': action.option_strings[0],
-				'default': action.default}
-			   for action in parser._actions if action.dest != 'help' and action.option_strings]
-
-	if cfg.pull('dump-args', False, silent=True):
-		print('Dumping vllm args')
-		print(json.dumps(arginfo, indent=2))
-		raise ValueError('Dumping vllm args')
-	rawargs = {}
+def collect_vllm_args(cfg: fig.Configuration, arginfo) -> Dict[str, Any]:
+	argvals = {}
 
 	empty = object()
 	for info in arginfo:
 		value = cfg.pull(info['name'], empty, silent=True)
 		if value is not argparse.SUPPRESS and value is not empty:
-			rawargs[info['option']] = value
+			argvals[info['name']] = value
 
-	argv = argdict2argv(rawargs)
+	return argvals
+
+
+def apply_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
+	arginfo = [{'name': action.dest.replace('_', '-'), 'option': action.option_strings[0],
+				'default': action.default}
+			   for action in parser._actions if action.dest != 'help' and action.option_strings]
+
+	name2option = {info['name']: info['option'] for info in arginfo}
+
+	rawargs = collect_vllm_args(cfg, arginfo)
+
+	argv = argdict2argv({name2option[k]: v for k, v in rawargs.items()})
 	print('Equivalent `vllm` command:')
 	print(f'vllm serve {" ".join(map(shlex.quote,argv))}')
 
@@ -784,7 +801,7 @@ def start_vllm_server(cfg: fig.Configuration):
 		parser = FlexibleArgumentParser(description="vLLM OpenAI-Compatible RESTful API server.")
 		parser = make_arg_parser(parser)
 
-		args = collect_vllm_args(cfg, parser)
+		args = apply_vllm_args(cfg, parser)
 		# args = parser.parse_args(argv)
 		# args = parser.parse_args()
 
