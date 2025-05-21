@@ -543,6 +543,11 @@ def collect_vllm_args(cfg: fig.Configuration, parser) -> Dict[str, Any]:
 	arginfo = [{'name': action.dest.replace('_', '-'), 'option': action.option_strings[0],
 				'default': action.default}
 			   for action in parser._actions if action.dest != 'help' and action.option_strings]
+
+	if cfg.pull('dump-args', False, silent=True):
+		print('Dumping vllm args')
+		print(json.dumps(arginfo, indent=2))
+		raise ValueError('Dumping vllm args')
 	rawargs = {}
 
 	empty = object()
