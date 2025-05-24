@@ -93,7 +93,8 @@ llama4:
   resources: {cpu: 32, ram: 256, gpu: 4, gpu-ram: 80}
 
 llama4-mav:
-  model: meta-llama/Llama-4-Maverick-17B-128E-Instruct
+  # model: meta-llama/Llama-4-Maverick-17B-128E-Instruct
+  model: /fast/fleeb/huggingface_cache/hub/models--meta-llama--Llama-4-Maverick-17B-128E-Instruct/snapshots/f0ee6477b90b7a6aaefd2cfdf1b4a05d36184137
   dtype: bfloat16
   # gpu-memory-utilization: 0.9
   # max-num-seqs: 64
@@ -102,7 +103,7 @@ llama4-mav:
   # enable-auto-tool-choice: yes
   # tool-call-parser: llama3_json
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
-  resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 80}
+  resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75}
 
 
 llama8b:

@@ -74,7 +74,7 @@ def launch_llm(cfg: fig.Configuration):
 	me = socket.gethostname()
 	full_me = socket.getfqdn()
 	user = cfg.pull('user', None)
-	host = cfg.pull('host', None)
+	host = cfg.pull('loc', None)
 	if host is not None:
 		assert user is not None, f'host is specified, but user is not'
 	location = f'{user}@{host}' if user is not None and host is not None else None
