@@ -293,6 +293,11 @@ def load_serving_log(path, location=None):
 		if 'live' in info['events']:
 			return info.get('host', 'localhost') != info['location'].split('@')[-1]
 		return False
+	def filter_model_name(info):
+		name = info.get('model', '')
+		if name.startswith('/fast/fleeb/huggingface_cache/hub/'):
+			name = name.split('/snapshots', 1)[0].split('/')[-1]
+		return name
 	feats = {
 		'status': compute_status,
 		'startup': compute_startup,
@@ -300,6 +305,7 @@ def load_serving_log(path, location=None):
 		'duration': compute_duration,
 		'url': compute_url,
 		'needs_tunnel': compute_needs_tunnel,
+		'model': filter_model_name,
 	}
 
 	columns = ['event', 'timestamp', 'model', 'host', 'port', 'pid', 'id']
