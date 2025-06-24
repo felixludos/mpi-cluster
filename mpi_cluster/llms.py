@@ -296,7 +296,7 @@ def load_serving_log(path, location=None):
 	def filter_model_name(info):
 		name = info.get('model', '')
 		if name.startswith('/fast/fleeb/huggingface_cache/hub/'):
-			name = name.split('/snapshots', 1)[0].split('/')[-1]
+			name = name.split('/snapshots', 1)[0].split('/')[-1].replace('models--', '').replace('--', '/')
 		return name
 	feats = {
 		'status': compute_status,

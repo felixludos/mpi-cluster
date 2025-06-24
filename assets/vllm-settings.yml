@@ -62,9 +62,9 @@ mistral7b:
 llama70b:
   model: meta-llama/Llama-3.3-70B-Instruct
   dtype: bfloat16
-  gpu-memory-utilization: 0.9
+  # gpu-memory-utilization: 0.9
   max-model-len: 65536
-  max-num-seqs: 4
+  # max-num-seqs: 4
   tensor-parallel-size: 2
   enable-auto-tool-choice: yes
   tool-call-parser: llama3_json
@@ -83,33 +83,23 @@ llama70b-8gpu:
   chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 8, ram: 256, gpu: 8, gpu-ram: 20}
 
-llama4:
-  model: meta-llama/Llama-4-Scout-17B-16E-Instruct
+llama4-scout:
+  # model: meta-llama/Llama-4-Scout-17B-16E-Instruct
+  model: /fast/fleeb/huggingface_cache/hub/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8
   dtype: bfloat16
-  gpu-memory-utilization: 0.9
+  # gpu-memory-utilization: 0.9
   # max-num-seqs: 64
   max-model-len: 65536
   tensor-parallel-size: 4
+  enable-auto-tool-choice: yes
+  tool-call-parser: llama4_json
+  chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_json.jinja"
   # enable-auto-tool-choice: yes
   # tool-call-parser: llama3_json
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 32, ram: 256, gpu: 4, gpu-ram: 80}
 
-# llama4-mav:
-#   # model: meta-llama/Llama-4-Maverick-17B-128E-Instruct
-#   model: /fast/fleeb/huggingface_cache/hub/models--meta-llama--Llama-4-Maverick-17B-128E-Instruct/snapshots/f0ee6477b90b7a6aaefd2cfdf1b4a05d36184137
-#   dtype: bfloat16
-#   # gpu-memory-utilization: 0.9
-#   # max-num-seqs: 64
-#   max-model-len: 430000
-#   tensor-parallel-size: 8
-#   # enable-auto-tool-choice: yes
-#   # tool-call-parser: llama3_json
-#   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
-#   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75}
-
-
-llama4-mav-fp8:
+llama4-mav:
   model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
   # dtype: bfloat16
   # gpu-memory-utilization: 0.9
@@ -119,8 +109,10 @@ llama4-mav-fp8:
   tensor-parallel-size: 8
   port: 8160
   enable-auto-tool-choice: yes
-  tool-call-parser: llama4_pythonic
-  chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_pythonic.jinja"
+  tool-call-parser: llama4_json
+  chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_json.jinja"
+  # tool-call-parser: llama4_pythonic
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_pythonic.jinja"
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
 
@@ -171,7 +163,7 @@ gemma27b:
   model: google/gemma-3-27b-it
   dtype: bfloat16
   # gpu-memory-utilization: 0.90
-  # max-model-len: 65536
+  max-model-len: 65536
   # max-num-seqs: 8
   enable-auto-tool-choice: yes
   tool-call-parser: pythonic
