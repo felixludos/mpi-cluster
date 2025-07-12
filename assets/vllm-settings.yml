@@ -1,13 +1,16 @@
 
 
 phi4-r:
-  model: microsoft/Phi-4-reasoning
+  # model: microsoft/Phi-4-reasoning
+  model: "{hf_dir}/models--microsoft--Phi-4-reasoning/snapshots/57faa5302213dfe4155297bb19f66d2959d0b137"
   dtype: bfloat16
-  gpu-memory-utilization: 0.9
   trust-remote-code: yes
-  # max-model-len: 65536
-  # max-num-seqs: 4
-  resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 80}
+  enable-auto-tool-choice: yes
+  tool-call-parser: llama3_json
+  chat-template: "{vllm_dir}/examples/tool_chat_template_phi4_mini.jinja"
+  enable-reasoning: yes
+  reasoning-parser: deepseek_r1
+  resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
 
 
 phi4-mm:
@@ -15,6 +18,9 @@ phi4-mm:
   dtype: bfloat16
   gpu-memory-utilization: 0.95
   trust-remote-code: yes
+  enable-auto-tool-choice: yes
+  tool-call-parser: llama3_json
+  chat-template: "{vllm_dir}/examples/tool_chat_template_phi4_mini.jinja"
   max-model-len: 65536
   max-num-seqs: 4
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
@@ -24,8 +30,6 @@ phi4-mm-large:
   dtype: bfloat16
   gpu-memory-utilization: 0.90
   trust-remote-code: yes
-  # max-model-len: 65536
-  # max-num-seqs: 16
   resources: {cpu: 8, ram: 64, gpu: 1, gpu-ram: 80}
 
 qwen8b:
@@ -40,11 +44,8 @@ qwen8b:
 
 qwen32b:
   # model: Qwen/Qwen3-32B
-  model: /fast/fleeb/huggingface_cache/hub/models--Qwen--Qwen3-32B/snapshots/30b8421510892303dc5ddd6cd0ac90ca2053478d
+  model: "{hf_dir}/models--Qwen--Qwen3-32B/snapshots/30b8421510892303dc5ddd6cd0ac90ca2053478d"
   dtype: bfloat16
-  # gpu-memory-utilization: 0.90
-  # max-model-len: 65536
-  # max-num-seqs: 1
   enable-reasoning: yes
   reasoning-parser: deepseek_r1
   enable-auto-tool-choice: yes
@@ -62,9 +63,7 @@ mistral7b:
 llama70b:
   model: meta-llama/Llama-3.3-70B-Instruct
   dtype: bfloat16
-  # gpu-memory-utilization: 0.9
   max-model-len: 65536
-  # max-num-seqs: 4
   tensor-parallel-size: 2
   enable-auto-tool-choice: yes
   tool-call-parser: llama3_json
@@ -85,10 +84,8 @@ llama70b-8gpu:
 
 llama4-scout:
   # model: meta-llama/Llama-4-Scout-17B-16E-Instruct
-  model: /fast/fleeb/huggingface_cache/hub/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8
+  model: "{hf_dir}/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8"
   dtype: bfloat16
-  # gpu-memory-utilization: 0.9
-  # max-num-seqs: 64
   max-model-len: 65536
   tensor-parallel-size: 4
   enable-auto-tool-choice: yes
@@ -101,10 +98,6 @@ llama4-scout:
 
 llama4-mav:
   model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
-  # dtype: bfloat16
-  # gpu-memory-utilization: 0.9
-  # max-num-seqs: 64
-  # kv-cache-dtype: fp8
   max-model-len: 400000
   tensor-parallel-size: 8
   port: 8160
@@ -162,9 +155,7 @@ llama1b-large:
 gemma27b:
   model: google/gemma-3-27b-it
   dtype: bfloat16
-  # gpu-memory-utilization: 0.90
   max-model-len: 65536
-  # max-num-seqs: 8
   enable-auto-tool-choice: yes
   tool-call-parser: pythonic
   chat-template: "{vllm_dir}/examples/tool_chat_template_gemma3_pythonic.jinja"
@@ -173,9 +164,6 @@ gemma27b:
 gemma4b:
   model: google/gemma-3-4b-it
   dtype: bfloat16
-  # gpu-memory-utilization: 0.90
-  # max-model-len: 65536
-  # max-num-seqs: 8
   enable-auto-tool-choice: yes
   tool-call-parser: pythonic
   chat-template: "{vllm_dir}/examples/tool_chat_template_gemma3_pythonic.jinja"

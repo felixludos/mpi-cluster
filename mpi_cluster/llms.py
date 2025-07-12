@@ -131,6 +131,7 @@ def launch_llm(cfg: fig.Configuration):
 						ident = items[ident]['key']
 
 	vllm_dir = cfg.pull('vllm-dir', '/home/fleeb/workspace/code/clones/vllm')
+	hf_dir = cfg.pull('hf-dir', '/fast/fleeb/huggingface_cache/hub')
 
 	settings = acc.get(ident, {})
 	if settings is None:
@@ -165,7 +166,7 @@ def launch_llm(cfg: fig.Configuration):
 	port = cfg.pull('port', None)
 
 	args = settings
-	args.update({k: v.format(vllm_dir=vllm_dir) for k, v in args.items() if isinstance(v, str)})
+	args.update({k: v.format(vllm_dir=vllm_dir, hf_dir=hf_dir) for k, v in args.items() if isinstance(v, str)})
 
 	if port is not None:
 		args['port'] = port
