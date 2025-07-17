@@ -1,40 +1,30 @@
 
+# codes:
+#   llama3: 3
+#   llama4: 4
+#   phi: 5
+#   gemma: 2
+#   qwen: 6
+#   deepseek/other: 7
 
 phi4-r:
   # model: microsoft/Phi-4-reasoning
   model: "{hf_dir}/models--microsoft--Phi-4-reasoning/snapshots/57faa5302213dfe4155297bb19f66d2959d0b137"
+  port: 8050
   dtype: bfloat16
   trust-remote-code: yes
-  enable-auto-tool-choice: yes
-  tool-call-parser: llama3_json
-  chat-template: "{vllm_dir}/examples/tool_chat_template_phi4_mini.jinja"
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_phi4_mini.jinja"
   enable-reasoning: yes
   reasoning-parser: deepseek_r1
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
-
-phi4-mm:
-  model: microsoft/Phi-4-multimodal-instruct
-  dtype: bfloat16
-  gpu-memory-utilization: 0.95
-  trust-remote-code: yes
-  enable-auto-tool-choice: yes
-  tool-call-parser: llama3_json
-  chat-template: "{vllm_dir}/examples/tool_chat_template_phi4_mini.jinja"
-  max-model-len: 65536
-  max-num-seqs: 4
-  resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
-
-phi4-mm-large:
-  model: microsoft/Phi-4-multimodal-instruct
-  dtype: bfloat16
-  gpu-memory-utilization: 0.90
-  trust-remote-code: yes
-  resources: {cpu: 8, ram: 64, gpu: 1, gpu-ram: 80}
 
 
 qwen8b:
   model: Qwen/Qwen3-8B
   dtype: bfloat16
+  port: 8006
   gpu-memory-utilization: 0.95
   max-model-len: 16384
   max-num-seqs: 1
@@ -45,67 +35,105 @@ qwen8b:
 qwen32b:
   # model: Qwen/Qwen3-32B
   model: "{hf_dir}/models--Qwen--Qwen3-32B/snapshots/30b8421510892303dc5ddd6cd0ac90ca2053478d"
+  port: 8600
   dtype: bfloat16
   enable-reasoning: yes
   reasoning-parser: deepseek_r1
-  enable-auto-tool-choice: yes
-  tool-call-parser: hermes
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: hermes
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 80}
+
+qwen235b:
+  model: Qwen/Qwen3-235B-A22B-FP8
+  port: 8668
+  # dtype: fp8
+  gpu-memory-utilization: 0.95
+  max-model-len: 1024
+  max-num-seqs: 1
+  tensor-parallel-size: 8
+  enable-expert-parallel: yes
+  # kv-cache-dtype: fp8
+  enable-reasoning: yes
+  reasoning-parser: deepseek_r1
+  resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
 
 mistral7b:
   model: mistralai/Mistral-7B-Instruct-v0.3
   dtype: bfloat16
-  gpu-memory-utilization: 0.9
+  port: 8007
+  # gpu-memory-utilization: 0.9
   max-model-len: 16384
   max-num-seqs: 1
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
 
 
 llama70b:
-  model: meta-llama/Llama-3.3-70B-Instruct
+  # model: meta-llama/Llama-3.3-70B-Instruct
+  model: "{hf_dir}/models--meta-llama--Llama-3.3-70B-Instruct/snapshots/6f6073b423013f6a7d4d9f39144961bfbfbc386b"
   dtype: bfloat16
+  port: 8300
   max-model-len: 65536
   tensor-parallel-size: 2
-  enable-auto-tool-choice: yes
-  tool-call-parser: llama3_json
-  chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
 
 llama70b-8gpu:
-  model: meta-llama/Llama-3.3-70B-Instruct
+  # model: meta-llama/Llama-3.3-70B-Instruct
+  model: "{hf_dir}/models--meta-llama--Llama-3.3-70B-Instruct/snapshots/6f6073b423013f6a7d4d9f39144961bfbfbc386b"
   dtype: bfloat16
-  gpu-memory-utilization: 0.9
+  port: 8301
+  # gpu-memory-utilization: 0.9
   max-model-len: 32768
   max-num-seqs: 8
   tensor-parallel-size: 8
-  enable-auto-tool-choice: yes
-  tool-call-parser: llama3_json
-  chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 8, ram: 256, gpu: 8, gpu-ram: 20}
 
 llama4-scout:
   # model: meta-llama/Llama-4-Scout-17B-16E-Instruct
   model: "{hf_dir}/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8"
   dtype: bfloat16
+  port: 8400
   max-model-len: 65536
   tensor-parallel-size: 4
-  enable-auto-tool-choice: yes
-  tool-call-parser: llama4_json
-  chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_json.jinja"
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama4_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_json.jinja"
   # enable-auto-tool-choice: yes
   # tool-call-parser: llama3_json
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 32, ram: 256, gpu: 4, gpu-ram: 80}
 
+
+llama4-scout-8gpu:
+  # model: meta-llama/Llama-4-Scout-17B-16E-Instruct
+  model: "{hf_dir}/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8"
+  dtype: bfloat16
+  port: 8401
+  max-model-len: 65536
+  tensor-parallel-size: 8
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama4_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_json.jinja"
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  resources: {cpu: 32, ram: 256, gpu: 8, gpu-ram: 75}
+
 llama4-mav:
-  model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
+  # model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
+  model: "{hf_dir}/models--meta-llama--Llama-4-Maverick-17B-128E-Instruct-FP8/snapshots/94125d2bd83076b21eed33119525e29eaf3894f4"
   max-model-len: 400000
   tensor-parallel-size: 8
-  port: 8160
-  enable-auto-tool-choice: yes
-  tool-call-parser: llama4_json
-  chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_json.jinja"
+  port: 8448
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama4_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_json.jinja"
   # tool-call-parser: llama4_pythonic
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_pythonic.jinja"
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
@@ -113,44 +141,48 @@ llama4-mav:
 llama8b:
   model: meta-llama/Llama-3.1-8B-Instruct
   dtype: bfloat16
-  gpu-memory-utilization: 0.9
+  port: 8030
+  # gpu-memory-utilization: 0.9
   max-model-len: 16384
   # max-num-seqs: 4
-  enable-auto-tool-choice: yes
-  tool-call-parser: llama3_json
-  chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 20}
 
 llama8b-2gpu:
   model: meta-llama/Llama-3.1-8B-Instruct
   dtype: bfloat16
-  gpu-memory-utilization: 0.9
+  port: 8031
+  # gpu-memory-utilization: 0.9
   max-model-len: 32768
   max-num-seqs: 32
   tensor-parallel-size: 2
-  enable-auto-tool-choice: yes
-  tool-call-parser: llama3_json
-  chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 4, ram: 128, gpu: 2, gpu-ram: 20}
 
 llama1b:
   model: meta-llama/Llama-3.2-1B-Instruct
   dtype: bfloat16
-  gpu-memory-utilization: 0.9
+  port: 8003
+  # gpu-memory-utilization: 0.9
   max-model-len: 16384
   max-num-seqs: 1
-  enable-auto-tool-choice: yes
-  tool-call-parser: llama3_json
-  chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 8, ram: 32, gpu: 1, gpu-ram: 4}
 
 llama1b-large:
   model: meta-llama/Llama-3.2-1B-Instruct
   dtype: bfloat16
-  gpu-memory-utilization: 0.9
-  enable-auto-tool-choice: yes
-  tool-call-parser: llama3_json
-  chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  port: 8013
+  # gpu-memory-utilization: 0.9
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 4, ram: 32, gpu: 1, gpu-ram: 20}
 
 
@@ -158,24 +190,27 @@ gemma27b:
   model: google/gemma-3-27b-it
   dtype: bfloat16
   max-model-len: 65536
-  enable-auto-tool-choice: yes
-  tool-call-parser: pythonic
-  chat-template: "{vllm_dir}/examples/tool_chat_template_gemma3_pythonic.jinja"
+  port: 8200
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: pythonic
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_gemma3_pythonic.jinja"
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 75}
 
 gemma4b:
   model: google/gemma-3-4b-it
   dtype: bfloat16
-  enable-auto-tool-choice: yes
-  tool-call-parser: pythonic
-  chat-template: "{vllm_dir}/examples/tool_chat_template_gemma3_pythonic.jinja"
+  port: 8002
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: pythonic
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_gemma3_pythonic.jinja"
   resources: {cpu: 8, ram: 64, gpu: 1, gpu-ram: 20}
 
 
 r1qwen32b:
   model: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
   dtype: bfloat16
-  gpu-memory-utilization: 0.95
+  port: 8070
+  # gpu-memory-utilization: 0.95
   max-model-len: 65536
   max-num-seqs: 1
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 80}
@@ -184,7 +219,8 @@ r1qwen32b:
 r1qwen32b-large:
   model: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
   dtype: bfloat16
-  gpu-memory-utilization: 0.95
+  port: 8071
+  # gpu-memory-utilization: 0.95
   max-model-len: 65536
   max-num-seqs: 4
   tensor-parallel-size: 2
@@ -192,7 +228,24 @@ r1qwen32b-large:
 
 
 
+# phi4-mm:
+#   model: microsoft/Phi-4-multimodal-instruct
+#   dtype: bfloat16
+#   gpu-memory-utilization: 0.95
+#   trust-remote-code: yes
+#   enable-auto-tool-choice: yes
+#   tool-call-parser: llama3_json
+#   chat-template: "{vllm_dir}/examples/tool_chat_template_phi4_mini.jinja"
+#   max-model-len: 65536
+#   max-num-seqs: 4
+#   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
 
+# phi4-mm-large:
+#   model: microsoft/Phi-4-multimodal-instruct
+#   dtype: bfloat16
+#   gpu-memory-utilization: 0.90
+#   trust-remote-code: yes
+#   resources: {cpu: 8, ram: 64, gpu: 1, gpu-ram: 80}
 
 
 
