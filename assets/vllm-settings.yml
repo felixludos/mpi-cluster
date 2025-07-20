@@ -20,6 +20,22 @@ phi4-r:
   reasoning-parser: deepseek_r1
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
 
+nemotron-r:
+  model: nvidia/OpenReasoning-Nemotron-32B
+  port: 8078
+  dtype: bfloat16
+  resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
+
+nemotron-ultra:
+  # model: nvidia/Llama-3_1-Nemotron-Ultra-253B-v1-FP8
+  model: "{hf_dir}/models--nvidia--Llama-3_1-Nemotron-Ultra-253B-v1-FP8/snapshots/e078e0aaf3c56376960a67167cec3676d4c40cb5"
+  port: 8778
+  trust-remote-code: yes
+  tensor-parallel-size: 8
+  # enforce-eager: yes
+  # quantization: modelopt
+  resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
+
 
 qwen8b:
   model: Qwen/Qwen3-8B
@@ -44,12 +60,13 @@ qwen32b:
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 80}
 
 qwen235b:
-  model: Qwen/Qwen3-235B-A22B-FP8
+  # model: Qwen/Qwen3-235B-A22B-FP8
+  model: "{hf_dir}/models--Qwen--Qwen3-235B-A22B-FP8/snapshots/f49ca1a1be0fcb351b40a0d22ed4166c664e0f39"
   port: 8668
   # dtype: fp8
   gpu-memory-utilization: 0.5
-  max-model-len: 1024
-  max-num-seqs: 1
+  # max-model-len: 40960
+  # max-num-seqs: 1
   tensor-parallel-size: 8
   enable-expert-parallel: yes
   enable-reasoning: yes
@@ -63,8 +80,26 @@ mistral7b:
   port: 8007
   # gpu-memory-utilization: 0.9
   max-model-len: 16384
+  tokenizer-mode: mistral
   max-num-seqs: 1
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
+
+mistral-small:
+  model: mistralai/Mistral-Small-3.2-24B-Instruct-2506
+  dtype: bfloat16
+  tokenizer-mode: mistral
+  port: 8070
+  resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
+
+
+hunyuan:
+  model: tencent/Hunyuan-A13B-Instruct
+  dtype: bfloat16
+  port: 8700
+  # max-model-len: 65536
+  trust-remote-code: yes
+  tensor-parallel-size: 2
+  resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
 
 
 llama70b:
@@ -114,7 +149,7 @@ llama4-scout-8gpu:
   model: "{hf_dir}/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8"
   dtype: bfloat16
   port: 8401
-  max-model-len: 65536
+  # max-model-len: 65536
   tensor-parallel-size: 8
   # enable-auto-tool-choice: yes
   # tool-call-parser: llama4_json
@@ -122,7 +157,7 @@ llama4-scout-8gpu:
   # enable-auto-tool-choice: yes
   # tool-call-parser: llama3_json
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
-  resources: {cpu: 32, ram: 256, gpu: 8, gpu-ram: 75}
+  resources: {cpu: 32, ram: 256, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
 llama4-mav:
   # model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
