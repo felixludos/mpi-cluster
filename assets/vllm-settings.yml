@@ -47,12 +47,11 @@ qwen235b:
   model: Qwen/Qwen3-235B-A22B-FP8
   port: 8668
   # dtype: fp8
-  gpu-memory-utilization: 0.95
+  gpu-memory-utilization: 0.5
   max-model-len: 1024
   max-num-seqs: 1
   tensor-parallel-size: 8
   enable-expert-parallel: yes
-  # kv-cache-dtype: fp8
   enable-reasoning: yes
   reasoning-parser: deepseek_r1
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}

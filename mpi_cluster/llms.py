@@ -213,7 +213,7 @@ def make_serving_table(data, columns, online_only=False):
 	status_color = {'ended': 'grey', 'error': 'red', 'unknown': 'red', 'offline': 'grey',
 					'loading': 'blue', 'waiting': 'cyan', 'online': 'green'}
 	def _display(item, key, val):
-		if key == 'duration':
+		if key == 'live':
 			if val is None and item['status'] == 'online' and 'live' in item['events']:
 				val = (datetime.now() - item['events']['live']).total_seconds() #/ 3600
 			return '--' if val is None else humanize.naturaldelta(val)
@@ -257,7 +257,7 @@ def sort_serving_data(data):
 	data.sort(key=lambda item: (status_order.index(item['status'])
 							 if item['status'] in status_order else len(status_order),
 								now - (item['started'] or now),
-								item.get('duration') or 0, item['url']))
+								item.get('live') or 0, item['url']))
 	return data
 
 
@@ -303,7 +303,7 @@ def load_serving_log(path, location=None):
 		'status': compute_status,
 		'startup': compute_startup,
 		'started': compute_started,
-		'duration': compute_duration,
+		'live': compute_duration,
 		'url': compute_url,
 		'needs_tunnel': compute_needs_tunnel,
 		'model': filter_model_name,
@@ -397,8 +397,8 @@ def view_serving(cfg: fig.Configuration):
 	locations[None] = logpath
 
 	# autotunnel = cfg.pull('tunnel', True)
-	# _default_columns = ['status', 'duration', 'model', 'url', 'tunnel'] if autotunnel
-	columns = cfg.pull('columns', ['status', 'model', 'loc', 'address', 'started', 'duration', 'startup'])
+	# _default_columns = ['status', 'live', 'model', 'url', 'tunnel'] if autotunnel
+	columns = cfg.pull('columns', ['status', 'model', 'loc', 'address', 'started', 'live', 'startup'])
 	columns = {col: {} for col in columns}
 	if 'status' in columns:
 		columns['status']['justify'] = 'cyan'
