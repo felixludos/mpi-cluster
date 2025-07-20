@@ -628,92 +628,105 @@ def start_vllm_server(cfg: fig.Configuration):
 	import threading
 	from vllm.entrypoints.openai.api_server import (logger, build_async_engine_client, init_app_state,
 		validate_parsed_serve_args, serve_http, ToolParserManager, FlexibleArgumentParser, make_arg_parser,
-				cli_env_setup, signal, os, uvloop, envs, setup_server, load_log_config, build_app)
+		cli_env_setup, signal, os, uvloop, envs, setup_server, load_log_config, lifespan, Namespace, FastAPI,
+		router, mount_metrics, CORSMiddleware, HTTPException, Request, ErrorResponse, JSONResponse,
+		RequestValidationError, AuthenticationMiddleware, XRequestIdMiddleware, iterate_in_threadpool,
+		importlib, inspect)
 
 	# @asynccontextmanager
-	# async def time_lifespand(app):
-	# 	"""Lifespan context manager for the app."""
-	# 	async with lifespan(app):
-	# 		# startup complete
-	# 		live_message = ['live', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
-	# 		with logpath.open('a') as f:
-	# 			f.write('\t'.join(map(str, live_message)) + '\n')
-	# 		yield
-	# 		# shutdown starting
-	# 		# shutdown_message = ['shutdown', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
-	# 		# with logpath.open('a') as f:
-	# 		# 	f.write('\t'.join(map(str, shutdown_message)) + '\n')
-	#
-	# def build_app(args: Namespace) -> FastAPI:
-	# 	if args.disable_fastapi_docs:
-	# 		app = FastAPI(openapi_url=None,
-	# 					  docs_url=None,
-	# 					  redoc_url=None,
-	# 					  lifespan=time_lifespand)
-	# 	else:
-	# 		app = FastAPI(lifespan=time_lifespand)
-	# 	app.include_router(router)
-	# 	app.root_path = args.root_path
-	#
-	# 	mount_metrics(app)
-	#
-	# 	app.add_middleware(
-	# 		CORSMiddleware,
-	# 		allow_origins=args.allowed_origins,
-	# 		allow_credentials=args.allow_credentials,
-	# 		allow_methods=args.allowed_methods,
-	# 		allow_headers=args.allowed_headers,
-	# 	)
-	#
-	# 	@app.exception_handler(RequestValidationError)
-	# 	async def validation_exception_handler(_, exc):
-	# 		err = ErrorResponse(message=str(exc),
-	# 							type="BadRequestError",
-	# 							code=HTTPStatus.BAD_REQUEST)
-	# 		return JSONResponse(err.model_dump(),
-	# 							status_code=HTTPStatus.BAD_REQUEST)
-	#
-	# 	if token := envs.VLLM_API_KEY or args.api_key:
-	#
-	# 		@app.middleware("http")
-	# 		async def authentication(request: Request, call_next):
-	# 			if request.method == "OPTIONS":
-	# 				return await call_next(request)
-	# 			url_path = request.url.path
-	# 			if app.root_path and url_path.startswith(app.root_path):
-	# 				url_path = url_path[len(app.root_path):]
-	# 			if not url_path.startswith("/v1"):
-	# 				return await call_next(request)
-	# 			if request.headers.get("Authorization") != "Bearer " + token:
-	# 				return JSONResponse(content={"error": "Unauthorized"},
-	# 									status_code=401)
-	# 			return await call_next(request)
-	#
-	# 	if args.enable_request_id_headers:
-	# 		logger.warning(
-	# 			"CAUTION: Enabling X-Request-Id headers in the API Server. "
-	# 			"This can harm performance at high QPS.")
-	#
-	# 		@app.middleware("http")
-	# 		async def add_request_id(request: Request, call_next):
-	# 			request_id = request.headers.get(
-	# 				"X-Request-Id") or uuid.uuid4().hex
-	# 			response = await call_next(request)
-	# 			response.headers["X-Request-Id"] = request_id
-	# 			return response
-	#
-	# 	for middleware in args.middleware:
-	# 		module_path, object_name = middleware.rsplit(".", 1)
-	# 		imported = getattr(importlib.import_module(module_path), object_name)
-	# 		if inspect.isclass(imported):
-	# 			app.add_middleware(imported)  # type: ignore[arg-type]
-	# 		elif inspect.iscoroutinefunction(imported):
-	# 			app.middleware("http")(imported)
-	# 		else:
-	# 			raise ValueError(f"Invalid middleware {middleware}. "
-	# 							 f"Must be a function or a class.")
-	#
-	# 	return app
+	async def time_lifespand(app):
+		"""Lifespan context manager for the app."""
+		async with lifespan(app):
+			# startup complete
+			live_message = ['live', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
+			with logpath.open('a') as f:
+				f.write('\t'.join(map(str, live_message)) + '\n')
+			yield
+			# shutdown starting
+			# shutdown_message = ['shutdown', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
+			# with logpath.open('a') as f:
+			# 	f.write('\t'.join(map(str, shutdown_message)) + '\n')
+
+	def build_app(args: Namespace) -> FastAPI:
+		if args.disable_fastapi_docs:
+			app = FastAPI(openapi_url=None,
+						  docs_url=None,
+						  redoc_url=None,
+						  lifespan=time_lifespand)
+		else:
+			app = FastAPI(lifespan=time_lifespand)
+		app.include_router(router)
+		app.root_path = args.root_path
+
+		mount_metrics(app)
+
+		app.add_middleware(
+			CORSMiddleware,
+			allow_origins=args.allowed_origins,
+			allow_credentials=args.allow_credentials,
+			allow_methods=args.allowed_methods,
+			allow_headers=args.allowed_headers,
+		)
+
+		@app.exception_handler(HTTPException)
+		async def http_exception_handler(_: Request, exc: HTTPException):
+			err = ErrorResponse(message=exc.detail,
+								type=HTTPStatus(exc.status_code).phrase,
+								code=exc.status_code)
+			return JSONResponse(err.model_dump(), status_code=exc.status_code)
+
+		@app.exception_handler(RequestValidationError)
+		async def validation_exception_handler(_: Request,
+											   exc: RequestValidationError):
+			exc_str = str(exc)
+			errors_str = str(exc.errors())
+
+			if exc.errors() and errors_str and errors_str != exc_str:
+				message = f"{exc_str} {errors_str}"
+			else:
+				message = exc_str
+
+			err = ErrorResponse(message=message,
+								type=HTTPStatus.BAD_REQUEST.phrase,
+								code=HTTPStatus.BAD_REQUEST)
+			return JSONResponse(err.model_dump(),
+								status_code=HTTPStatus.BAD_REQUEST)
+
+		# Ensure --api-key option from CLI takes precedence over VLLM_API_KEY
+		if token := args.api_key or envs.VLLM_API_KEY:
+			app.add_middleware(AuthenticationMiddleware, api_token=token)
+
+		if args.enable_request_id_headers:
+			app.add_middleware(XRequestIdMiddleware)
+
+		if envs.VLLM_DEBUG_LOG_API_SERVER_RESPONSE:
+			logger.warning("CAUTION: Enabling log response in the API Server. "
+						   "This can include sensitive information and should be "
+						   "avoided in production.")
+
+			@app.middleware("http")
+			async def log_response(request: Request, call_next):
+				response = await call_next(request)
+				response_body = [
+					section async for section in response.body_iterator
+				]
+				response.body_iterator = iterate_in_threadpool(iter(response_body))
+				logger.info("response_body={%s}",
+							response_body[0].decode() if response_body else None)
+				return response
+
+		for middleware in args.middleware:
+			module_path, object_name = middleware.rsplit(".", 1)
+			imported = getattr(importlib.import_module(module_path), object_name)
+			if inspect.isclass(imported):
+				app.add_middleware(imported)  # type: ignore[arg-type]
+			elif inspect.iscoroutinefunction(imported):
+				app.middleware("http")(imported)
+			else:
+				raise ValueError(f"Invalid middleware {middleware}. "
+								 f"Must be a function or a class.")
+
+		return app
 
 	# reference: vllm\entrypoints\openai\api_server.py
 
