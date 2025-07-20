@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 import humanize
 import sshtunnel
+from http import HTTPStatus
 
 from .imports import *
 from .misc import repo_root
@@ -625,136 +626,120 @@ def start_vllm_server(cfg: fig.Configuration):
 			f.write('\t'.join(map(str, launch_message)) + '\n')
 
 	import threading
-	from vllm.entrypoints.openai.api_server import logger, VLLM_VERSION, \
-		build_async_engine_client, init_app_state, validate_parsed_serve_args, \
-		serve_http, create_server_socket, set_ulimit, TIMEOUT_KEEP_ALIVE, ToolParserManager, \
-		ReasoningParserManager, FlexibleArgumentParser, make_arg_parser, \
-		is_valid_ipv6_address, cli_env_setup, signal, os, uvloop, lifespan, inspect, FastAPI, \
-		mount_metrics, CORSMiddleware, RequestValidationError, ErrorResponse, JSONResponse, \
-		Request, importlib, uuid, Namespace, router, envs
+	from vllm.entrypoints.openai.api_server import (logger, build_async_engine_client, init_app_state,
+		validate_parsed_serve_args, serve_http, ToolParserManager, FlexibleArgumentParser, make_arg_parser,
+				cli_env_setup, signal, os, uvloop, envs, setup_server, load_log_config, build_app)
 
-	@asynccontextmanager
-	async def time_lifespand(app):
-		"""Lifespan context manager for the app."""
-		async with lifespan(app):
-			# startup complete
-			live_message = ['live', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
-			with logpath.open('a') as f:
-				f.write('\t'.join(map(str, live_message)) + '\n')
-			yield
-			# shutdown starting
-			# shutdown_message = ['shutdown', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
-			# with logpath.open('a') as f:
-			# 	f.write('\t'.join(map(str, shutdown_message)) + '\n')
+	# @asynccontextmanager
+	# async def time_lifespand(app):
+	# 	"""Lifespan context manager for the app."""
+	# 	async with lifespan(app):
+	# 		# startup complete
+	# 		live_message = ['live', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
+	# 		with logpath.open('a') as f:
+	# 			f.write('\t'.join(map(str, live_message)) + '\n')
+	# 		yield
+	# 		# shutdown starting
+	# 		# shutdown_message = ['shutdown', datetime.now().strftime('%y%m%d-%H%M%S'), model, host, port, pid, jobid]
+	# 		# with logpath.open('a') as f:
+	# 		# 	f.write('\t'.join(map(str, shutdown_message)) + '\n')
+	#
+	# def build_app(args: Namespace) -> FastAPI:
+	# 	if args.disable_fastapi_docs:
+	# 		app = FastAPI(openapi_url=None,
+	# 					  docs_url=None,
+	# 					  redoc_url=None,
+	# 					  lifespan=time_lifespand)
+	# 	else:
+	# 		app = FastAPI(lifespan=time_lifespand)
+	# 	app.include_router(router)
+	# 	app.root_path = args.root_path
+	#
+	# 	mount_metrics(app)
+	#
+	# 	app.add_middleware(
+	# 		CORSMiddleware,
+	# 		allow_origins=args.allowed_origins,
+	# 		allow_credentials=args.allow_credentials,
+	# 		allow_methods=args.allowed_methods,
+	# 		allow_headers=args.allowed_headers,
+	# 	)
+	#
+	# 	@app.exception_handler(RequestValidationError)
+	# 	async def validation_exception_handler(_, exc):
+	# 		err = ErrorResponse(message=str(exc),
+	# 							type="BadRequestError",
+	# 							code=HTTPStatus.BAD_REQUEST)
+	# 		return JSONResponse(err.model_dump(),
+	# 							status_code=HTTPStatus.BAD_REQUEST)
+	#
+	# 	if token := envs.VLLM_API_KEY or args.api_key:
+	#
+	# 		@app.middleware("http")
+	# 		async def authentication(request: Request, call_next):
+	# 			if request.method == "OPTIONS":
+	# 				return await call_next(request)
+	# 			url_path = request.url.path
+	# 			if app.root_path and url_path.startswith(app.root_path):
+	# 				url_path = url_path[len(app.root_path):]
+	# 			if not url_path.startswith("/v1"):
+	# 				return await call_next(request)
+	# 			if request.headers.get("Authorization") != "Bearer " + token:
+	# 				return JSONResponse(content={"error": "Unauthorized"},
+	# 									status_code=401)
+	# 			return await call_next(request)
+	#
+	# 	if args.enable_request_id_headers:
+	# 		logger.warning(
+	# 			"CAUTION: Enabling X-Request-Id headers in the API Server. "
+	# 			"This can harm performance at high QPS.")
+	#
+	# 		@app.middleware("http")
+	# 		async def add_request_id(request: Request, call_next):
+	# 			request_id = request.headers.get(
+	# 				"X-Request-Id") or uuid.uuid4().hex
+	# 			response = await call_next(request)
+	# 			response.headers["X-Request-Id"] = request_id
+	# 			return response
+	#
+	# 	for middleware in args.middleware:
+	# 		module_path, object_name = middleware.rsplit(".", 1)
+	# 		imported = getattr(importlib.import_module(module_path), object_name)
+	# 		if inspect.isclass(imported):
+	# 			app.add_middleware(imported)  # type: ignore[arg-type]
+	# 		elif inspect.iscoroutinefunction(imported):
+	# 			app.middleware("http")(imported)
+	# 		else:
+	# 			raise ValueError(f"Invalid middleware {middleware}. "
+	# 							 f"Must be a function or a class.")
+	#
+	# 	return app
 
-	def build_app(args: Namespace) -> FastAPI:
-		if args.disable_fastapi_docs:
-			app = FastAPI(openapi_url=None,
-						  docs_url=None,
-						  redoc_url=None,
-						  lifespan=time_lifespand)
-		else:
-			app = FastAPI(lifespan=time_lifespand)
-		app.include_router(router)
-		app.root_path = args.root_path
-
-		mount_metrics(app)
-
-		app.add_middleware(
-			CORSMiddleware,
-			allow_origins=args.allowed_origins,
-			allow_credentials=args.allow_credentials,
-			allow_methods=args.allowed_methods,
-			allow_headers=args.allowed_headers,
-		)
-
-		@app.exception_handler(RequestValidationError)
-		async def validation_exception_handler(_, exc):
-			err = ErrorResponse(message=str(exc),
-								type="BadRequestError",
-								code=HTTPStatus.BAD_REQUEST)
-			return JSONResponse(err.model_dump(),
-								status_code=HTTPStatus.BAD_REQUEST)
-
-		if token := envs.VLLM_API_KEY or args.api_key:
-
-			@app.middleware("http")
-			async def authentication(request: Request, call_next):
-				if request.method == "OPTIONS":
-					return await call_next(request)
-				url_path = request.url.path
-				if app.root_path and url_path.startswith(app.root_path):
-					url_path = url_path[len(app.root_path):]
-				if not url_path.startswith("/v1"):
-					return await call_next(request)
-				if request.headers.get("Authorization") != "Bearer " + token:
-					return JSONResponse(content={"error": "Unauthorized"},
-										status_code=401)
-				return await call_next(request)
-
-		if args.enable_request_id_headers:
-			logger.warning(
-				"CAUTION: Enabling X-Request-Id headers in the API Server. "
-				"This can harm performance at high QPS.")
-
-			@app.middleware("http")
-			async def add_request_id(request: Request, call_next):
-				request_id = request.headers.get(
-					"X-Request-Id") or uuid.uuid4().hex
-				response = await call_next(request)
-				response.headers["X-Request-Id"] = request_id
-				return response
-
-		for middleware in args.middleware:
-			module_path, object_name = middleware.rsplit(".", 1)
-			imported = getattr(importlib.import_module(module_path), object_name)
-			if inspect.isclass(imported):
-				app.add_middleware(imported)  # type: ignore[arg-type]
-			elif inspect.iscoroutinefunction(imported):
-				app.middleware("http")(imported)
-			else:
-				raise ValueError(f"Invalid middleware {middleware}. "
-								 f"Must be a function or a class.")
-
-		return app
+	# reference: vllm\entrypoints\openai\api_server.py
 
 	async def run_server(args, **uvicorn_kwargs) -> None:
-		logger.info("vLLM API server version %s", VLLM_VERSION)
-		logger.info("args: %s", args)
+		"""Run a single-worker API server."""
+		listen_address, sock = setup_server(args)
+		await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+
+	async def run_server_worker(listen_address,
+								sock,
+								args,
+								client_config=None,
+								**uvicorn_kwargs) -> None:
+		"""Run a single API server worker."""
 
 		if args.tool_parser_plugin and len(args.tool_parser_plugin) > 3:
 			ToolParserManager.import_tool_parser(args.tool_parser_plugin)
 
-		valid_tool_parses = ToolParserManager.tool_parsers.keys()
-		if args.enable_auto_tool_choice \
-			and args.tool_call_parser not in valid_tool_parses:
-			raise KeyError(f"invalid tool call parser: {args.tool_call_parser} "
-						f"(chose from {{ {','.join(valid_tool_parses)} }})")
+		server_index = client_config.get("client_index", 0) if client_config else 0
 
-		valid_reasoning_parses = ReasoningParserManager.reasoning_parsers.keys()
-		if args.reasoning_parser \
-			and args.reasoning_parser not in valid_reasoning_parses:
-			raise KeyError(
-				f"invalid reasoning parser: {args.reasoning_parser} "
-				f"(chose from {{ {','.join(valid_reasoning_parses)} }})")
+		# Load logging config for uvicorn if specified
+		log_config = load_log_config(args.log_config_file)
+		if log_config is not None:
+			uvicorn_kwargs['log_config'] = log_config
 
-		# workaround to make sure that we bind the port before the engine is set up.
-		# This avoids race conditions with ray.
-		# see https://github.com/vllm-project/vllm/issues/8204
-		sock_addr = (args.host or "", args.port)
-		sock = create_server_socket(sock_addr)
-
-		# workaround to avoid footguns where uvicorn drops requests with too
-		# many concurrent requests active
-		set_ulimit()
-
-		def signal_handler(*_) -> None:
-			# Interrupt server on sigterm while initializing
-			raise KeyboardInterrupt("terminated")
-
-		signal.signal(signal.SIGTERM, signal_handler)
-
-		async with build_async_engine_client(args) as engine_client:
+		async with build_async_engine_client(args, client_config) as engine_client:
 			app = build_app(args)
 
 			@app.get("/shutdown")
@@ -769,16 +754,8 @@ def start_vllm_server(cfg: fig.Configuration):
 			vllm_config = await engine_client.get_vllm_config()
 			await init_app_state(engine_client, vllm_config, app.state, args)
 
-			def _listen_addr(a: str) -> str:
-				if is_valid_ipv6_address(a):
-					return '[' + a + ']'
-				return a or "0.0.0.0"
-
-			is_ssl = args.ssl_keyfile and args.ssl_certfile
-			logger.info("Starting vLLM API server on http%s://%s:%d",
-						"s" if is_ssl else "", _listen_addr(sock_addr[0]),
-						sock_addr[1])
-
+			logger.info("Starting vLLM API server %d on %s", server_index,
+						listen_address)
 			shutdown_task = await serve_http(
 				app,
 				sock=sock,
@@ -789,7 +766,7 @@ def start_vllm_server(cfg: fig.Configuration):
 				# NOTE: When the 'disable_uvicorn_access_log' value is True,
 				# no access log will be output.
 				access_log=not args.disable_uvicorn_access_log,
-				timeout_keep_alive=TIMEOUT_KEEP_ALIVE,
+				timeout_keep_alive=envs.VLLM_HTTP_TIMEOUT_KEEP_ALIVE,
 				ssl_keyfile=args.ssl_keyfile,
 				ssl_certfile=args.ssl_certfile,
 				ssl_ca_certs=args.ssl_ca_certs,
@@ -802,6 +779,92 @@ def start_vllm_server(cfg: fig.Configuration):
 			await shutdown_task
 		finally:
 			sock.close()
+
+	# #########
+	# async def run_server(args, **uvicorn_kwargs) -> None:
+	# 	logger.info("vLLM API server version %s", VLLM_VERSION)
+	# 	logger.info("args: %s", args)
+	#
+	# 	if args.tool_parser_plugin and len(args.tool_parser_plugin) > 3:
+	# 		ToolParserManager.import_tool_parser(args.tool_parser_plugin)
+	#
+	# 	valid_tool_parses = ToolParserManager.tool_parsers.keys()
+	# 	if args.enable_auto_tool_choice \
+	# 		and args.tool_call_parser not in valid_tool_parses:
+	# 		raise KeyError(f"invalid tool call parser: {args.tool_call_parser} "
+	# 					f"(chose from {{ {','.join(valid_tool_parses)} }})")
+	#
+	# 	valid_reasoning_parses = ReasoningParserManager.reasoning_parsers.keys()
+	# 	if args.reasoning_parser \
+	# 		and args.reasoning_parser not in valid_reasoning_parses:
+	# 		raise KeyError(
+	# 			f"invalid reasoning parser: {args.reasoning_parser} "
+	# 			f"(chose from {{ {','.join(valid_reasoning_parses)} }})")
+	#
+	# 	# workaround to make sure that we bind the port before the engine is set up.
+	# 	# This avoids race conditions with ray.
+	# 	# see https://github.com/vllm-project/vllm/issues/8204
+	# 	sock_addr = (args.host or "", args.port)
+	# 	sock = create_server_socket(sock_addr)
+	#
+	# 	# workaround to avoid footguns where uvicorn drops requests with too
+	# 	# many concurrent requests active
+	# 	set_ulimit()
+	#
+	# 	def signal_handler(*_) -> None:
+	# 		# Interrupt server on sigterm while initializing
+	# 		raise KeyboardInterrupt("terminated")
+	#
+	# 	signal.signal(signal.SIGTERM, signal_handler)
+	#
+	# 	async with build_async_engine_client(args) as engine_client:
+	# 		app = build_app(args)
+	#
+	# 		@app.get("/shutdown")
+	# 		async def shutdown():
+	# 			"""Gracefully stop Uvicorn and the engine."""
+	# 			def _stop():
+	# 				print("Received shutdown request …")
+	# 				os.kill(os.getpid(), signal.SIGINT)   # lets Uvicorn close cleanly
+	# 			threading.Thread(target=_stop).start()
+	# 			return 'Shutting down server.'
+	#
+	# 		vllm_config = await engine_client.get_vllm_config()
+	# 		await init_app_state(engine_client, vllm_config, app.state, args)
+	#
+	# 		def _listen_addr(a: str) -> str:
+	# 			if is_valid_ipv6_address(a):
+	# 				return '[' + a + ']'
+	# 			return a or "0.0.0.0"
+	#
+	# 		is_ssl = args.ssl_keyfile and args.ssl_certfile
+	# 		logger.info("Starting vLLM API server on http%s://%s:%d",
+	# 					"s" if is_ssl else "", _listen_addr(sock_addr[0]),
+	# 					sock_addr[1])
+	#
+	# 		shutdown_task = await serve_http(
+	# 			app,
+	# 			sock=sock,
+	# 			enable_ssl_refresh=args.enable_ssl_refresh,
+	# 			host=args.host,
+	# 			port=args.port,
+	# 			log_level=args.uvicorn_log_level,
+	# 			# NOTE: When the 'disable_uvicorn_access_log' value is True,
+	# 			# no access log will be output.
+	# 			access_log=not args.disable_uvicorn_access_log,
+	# 			# timeout_keep_alive=TIMEOUT_KEEP_ALIVE,
+	# 			ssl_keyfile=args.ssl_keyfile,
+	# 			ssl_certfile=args.ssl_certfile,
+	# 			ssl_ca_certs=args.ssl_ca_certs,
+	# 			ssl_cert_reqs=args.ssl_cert_reqs,
+	# 			**uvicorn_kwargs,
+	# 		)
+	#
+	# 	# NB: Await server shutdown only after the backend context is exited
+	# 	try:
+	# 		await shutdown_task
+	# 	finally:
+	# 		sock.close()
 
 	try:
 		cli_env_setup()
