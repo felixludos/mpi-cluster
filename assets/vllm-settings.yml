@@ -7,7 +7,7 @@
 #   qwen: 6
 #   deepseek/other: 7
 
-phi4-r:
+phi4-r: # confirmed
   # model: microsoft/Phi-4-reasoning
   model: "{hf_dir}/models--microsoft--Phi-4-reasoning/snapshots/57faa5302213dfe4155297bb19f66d2959d0b137"
   port: 8050
@@ -20,25 +20,33 @@ phi4-r:
   reasoning-parser: deepseek_r1
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
 
-nemotron-r:
+nemotron-r: # confirmed 2025-07-21 14:05:09
   model: nvidia/OpenReasoning-Nemotron-32B
   port: 8078
   max-model-len: 65536
   dtype: bfloat16
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 80}
 
-nemotron-ultra:
+nemotron-super: # unconfirmed
+  # model: nvidia/Llama-3_3-Nemotron-Super-49B-v1
+  model: "{hf_dir}/models--nvidia--Llama-3_3-Nemotron-Super-49B-v1/snapshots/1a2cb800fde0e2c100cf576215d7be3a5bffe717"
+  port: 8770
+  trust-remote-code: yes
+  tensor-parallel-size: 2
+  resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
+
+nemotron-ultra: # unconfirmed
   # model: nvidia/Llama-3_1-Nemotron-Ultra-253B-v1-FP8
   model: "{hf_dir}/models--nvidia--Llama-3_1-Nemotron-Ultra-253B-v1-FP8/snapshots/e078e0aaf3c56376960a67167cec3676d4c40cb5"
   port: 8778
   trust-remote-code: yes
   tensor-parallel-size: 8
-  enforce-eager: yes
+  # enforce-eager: yes
   # quantization: modelopt
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
 
-qwen8b:
+qwen8b: # stale
   model: Qwen/Qwen3-8B
   dtype: bfloat16
   port: 8006
@@ -49,7 +57,7 @@ qwen8b:
   reasoning-parser: deepseek_r1
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
 
-qwen32b:
+qwen32b: # confirmed 2025-07-21 14:05:09
   # model: Qwen/Qwen3-32B
   model: "{hf_dir}/models--Qwen--Qwen3-32B/snapshots/30b8421510892303dc5ddd6cd0ac90ca2053478d"
   port: 8600
@@ -60,7 +68,7 @@ qwen32b:
   # tool-call-parser: hermes
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 80}
 
-qwen235b:
+qwen235b: # confirmed 2025-07-21 14:05:09
   # model: Qwen/Qwen3-235B-A22B-FP8
   model: "{hf_dir}/models--Qwen--Qwen3-235B-A22B-FP8/snapshots/f49ca1a1be0fcb351b40a0d22ed4166c664e0f39"
   port: 8668
@@ -75,7 +83,7 @@ qwen235b:
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
 
-mistral7b:
+mistral7b: # stale
   model: mistralai/Mistral-7B-Instruct-v0.3
   dtype: bfloat16
   port: 8007
@@ -85,7 +93,7 @@ mistral7b:
   max-num-seqs: 1
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
 
-mistral-small:
+mistral-small: # unconfirmed
   model: mistralai/Mistral-Small-3.2-24B-Instruct-2506
   dtype: bfloat16
   tokenizer-mode: mistral
@@ -93,7 +101,7 @@ mistral-small:
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
 
 
-hunyuan:
+hunyuan: # confirmed 2025-07-21 14:05:09
   model: tencent/Hunyuan-A13B-Instruct
   dtype: bfloat16
   port: 8700
@@ -103,7 +111,7 @@ hunyuan:
   resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
 
 
-llama70b:
+llama70b: # confirmed
   # model: meta-llama/Llama-3.3-70B-Instruct
   model: "{hf_dir}/models--meta-llama--Llama-3.3-70B-Instruct/snapshots/6f6073b423013f6a7d4d9f39144961bfbfbc386b"
   dtype: bfloat16
@@ -129,7 +137,7 @@ llama70b-8gpu:
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 8, ram: 256, gpu: 8, gpu-ram: 20}
 
-llama4-scout:
+llama4-scout: # stale
   # model: meta-llama/Llama-4-Scout-17B-16E-Instruct
   model: "{hf_dir}/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8"
   dtype: bfloat16
@@ -145,7 +153,7 @@ llama4-scout:
   resources: {cpu: 32, ram: 256, gpu: 4, gpu-ram: 80}
 
 
-llama4-scout-8gpu:
+llama4-scout-8gpu: # stale
   # model: meta-llama/Llama-4-Scout-17B-16E-Instruct
   model: "{hf_dir}/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8"
   dtype: bfloat16
@@ -160,7 +168,7 @@ llama4-scout-8gpu:
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 32, ram: 256, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
-llama4-mav:
+llama4-mav: # confirmed
   # model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
   model: "{hf_dir}/models--meta-llama--Llama-4-Maverick-17B-128E-Instruct-FP8/snapshots/94125d2bd83076b21eed33119525e29eaf3894f4"
   max-model-len: 400000
@@ -173,7 +181,7 @@ llama4-mav:
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_pythonic.jinja"
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
-llama8b:
+llama8b: # stale
   model: meta-llama/Llama-3.1-8B-Instruct
   dtype: bfloat16
   port: 8030
@@ -185,7 +193,7 @@ llama8b:
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 20}
 
-llama8b-2gpu:
+llama8b-2gpu: # stale
   model: meta-llama/Llama-3.1-8B-Instruct
   dtype: bfloat16
   port: 8031
@@ -198,7 +206,7 @@ llama8b-2gpu:
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 4, ram: 128, gpu: 2, gpu-ram: 20}
 
-llama1b:
+llama1b: # stale
   model: meta-llama/Llama-3.2-1B-Instruct
   dtype: bfloat16
   port: 8003
@@ -210,7 +218,7 @@ llama1b:
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 8, ram: 32, gpu: 1, gpu-ram: 4}
 
-llama1b-large:
+llama1b-large: # stale
   model: meta-llama/Llama-3.2-1B-Instruct
   dtype: bfloat16
   port: 8013
@@ -221,7 +229,7 @@ llama1b-large:
   resources: {cpu: 4, ram: 32, gpu: 1, gpu-ram: 20}
 
 
-gemma27b:
+gemma27b: # confirmed 2025-07-21 14:05:09
   model: google/gemma-3-27b-it
   dtype: bfloat16
   max-model-len: 65536
@@ -231,7 +239,7 @@ gemma27b:
   # chat-template: "{vllm_dir}/examples/tool_chat_template_gemma3_pythonic.jinja"
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 75}
 
-gemma4b:
+gemma4b: # stale
   model: google/gemma-3-4b-it
   dtype: bfloat16
   port: 8002
@@ -241,27 +249,38 @@ gemma4b:
   resources: {cpu: 8, ram: 64, gpu: 1, gpu-ram: 20}
 
 
-r1qwen32b:
+r1qwen32b: # unconfirmed
   model: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
   dtype: bfloat16
-  port: 8070
+  port: 8870
   # gpu-memory-utilization: 0.95
   max-model-len: 65536
   max-num-seqs: 1
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 80}
 
 # --dtype bfloat16 --gpu-memory-utilization 0.95 --max-num-seqs 4 --tensor-parallel-size 2
-r1qwen32b-large:
+r1qwen32b-large: # unconfirmed
   model: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
   dtype: bfloat16
-  port: 8071
+  port: 8871
   # gpu-memory-utilization: 0.95
   max-model-len: 65536
   max-num-seqs: 4
   tensor-parallel-size: 2
   resources: {cpu: 16, ram: 128, gpu: 2, gpu-ram: 80}
 
+r1llama70b: # unconfirmed
+  model: deepseek-ai/DeepSeek-R1-Distill-Llama-70B
+  dtype: bfloat16
+  port: 8877
+  # gpu-memory-utilization: 0.95
+  # max-model-len: 65536
+  # max-num-seqs: 1
+  tensor-parallel-size: 2
+  resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
 
+
+## deprecated (or unused)
 
 # phi4-mm:
 #   model: microsoft/Phi-4-multimodal-instruct
