@@ -23,8 +23,9 @@ phi4-r:
 nemotron-r:
   model: nvidia/OpenReasoning-Nemotron-32B
   port: 8078
+  max-model-len: 65536
   dtype: bfloat16
-  resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
+  resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 80}
 
 nemotron-ultra:
   # model: nvidia/Llama-3_1-Nemotron-Ultra-253B-v1-FP8
@@ -32,7 +33,7 @@ nemotron-ultra:
   port: 8778
   trust-remote-code: yes
   tensor-parallel-size: 8
-  # enforce-eager: yes
+  enforce-eager: yes
   # quantization: modelopt
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 

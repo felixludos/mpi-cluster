@@ -24,6 +24,9 @@ echo "$JOB_NAME\t$JOB_ID\t$(date +%y%m%d-%H%M%S)\t$(hostname)" >> {job_dir}/star
 # export VLLM_DISABLE_COMPILE_CACHE=1
 # export VLLM_MOE_INTERMEDIATE_PADDING=1
 # export CUDA_LAUNCH_BLOCKING=1
+# export HF_HUB_TRACE_HF_API=1
+export HF_HUB_OFFLINE=1
+
 
 {command}
 
