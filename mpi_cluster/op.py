@@ -259,6 +259,8 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 	"""
 
 	if location is _not_set:
+		# location = cfg.pulls('location', 'loc', default=None)
+		# if location is None:
 		host = cfg.pull('host', None)
 		user = cfg.pull('user', None)
 		location = None if host is None or user is None else f'{user}@{host}'
@@ -275,6 +277,17 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 		working_dir = Path(working_dir).resolve()
 	if working_dir is None:
 		working_dir = '.'
+
+	gitpull = cfg.pull('git-pull', False)
+	if gitpull:
+		if not isinstance(gitpull, Path):
+			gitpull = str(working_dir)
+		print(f'Pulling latest changes from git in {gitpull} (on {location})')
+		out, e = run_command(f'cd {gitpull} && git pull', location=location)
+		if len(out):
+			print(out)
+		if len(e):
+			print(e)
 
 	interactive = cfg.pulls('interactive', 'i', default=False)
 
@@ -295,11 +308,11 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 
 		if commands is None:
 			cmd_path = cfg.pulls('command-path', 'cmd-path', 'path', default=None)
-			
 
 			update_cmds = cfg.pull('update-cmds', True)
 			include_cmds = cfg.pull('include-cmds', False)
 			if cmd_path:
+				cmd_path = cmd_path.format(repo=misc.repo_root())
 				cmd_path = Path(cmd_path)
 				if root:
 					cmd_path = root / cmd_path
@@ -327,6 +340,7 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 
 		rawname = cfg.pull('name', 'job')
 		jobdir = Path(cfg.pull('job-dir', str(misc.default_jobdir())))
+		# run_command(f'mkdir -p {str(jobdir)}', location=location)
 		if location is None:
 			jobdir.mkdir(exist_ok=True, parents=True)
 

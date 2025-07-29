@@ -11,7 +11,7 @@ columns:
   model: yes
   address: yes
   # started: yes
-  duration: yes
+  live: yes
   startup: yes
   loc: yes
   port: yes

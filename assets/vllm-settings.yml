@@ -7,7 +7,7 @@
 #   qwen: 6
 #   deepseek/other: 7
 
-phi4-r: # confirmed
+phi4: # confirmed
   # model: microsoft/Phi-4-reasoning
   model: "{hf_dir}/models--microsoft--Phi-4-reasoning/snapshots/57faa5302213dfe4155297bb19f66d2959d0b137"
   port: 8050
@@ -20,22 +20,30 @@ phi4-r: # confirmed
   reasoning-parser: deepseek_r1
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
 
-nemotron-r: # confirmed 2025-07-21 14:05:09
+nemo-r: # confirmed 2025-07-21 14:05:09
   model: nvidia/OpenReasoning-Nemotron-32B
   port: 8078
   max-model-len: 65536
   dtype: bfloat16
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 80}
 
-nemotron-super: # unconfirmed
+nemo-super: # confirmed 2025-07-23 13:39:41 (2025-07-23 13:45:28 missing tool template)
   # model: nvidia/Llama-3_3-Nemotron-Super-49B-v1
-  model: "{hf_dir}/models--nvidia--Llama-3_3-Nemotron-Super-49B-v1/snapshots/1a2cb800fde0e2c100cf576215d7be3a5bffe717"
+  model: "{hf_dir}/models--nvidia--Llama-3_3-Nemotron-Super-49B-v1/snapshots/b7432dd613fbd41afc32e12dffe5a08b0142a37c"
   port: 8770
   trust-remote-code: yes
   tensor-parallel-size: 2
   resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
 
-nemotron-ultra: # unconfirmed
+nemo-super-4gpu: # confirmed 2025-07-21 17:15:42
+  # model: nvidia/Llama-3_3-Nemotron-Super-49B-v1
+  model: "{hf_dir}/models--nvidia--Llama-3_3-Nemotron-Super-49B-v1/snapshots/b7432dd613fbd41afc32e12dffe5a08b0142a37c"
+  port: 8771
+  trust-remote-code: yes
+  tensor-parallel-size: 4
+  resources: {cpu: 32, ram: 256, gpu: 4, gpu-ram: 75, gpu-name: H100-80}
+
+nemo-ultra: # unconfirmed (2025-07-23 13:39:53 - fails due to KeyError: 'layers.68.mlp.down_proj.input_scale')
   # model: nvidia/Llama-3_1-Nemotron-Ultra-253B-v1-FP8
   model: "{hf_dir}/models--nvidia--Llama-3_1-Nemotron-Ultra-253B-v1-FP8/snapshots/e078e0aaf3c56376960a67167cec3676d4c40cb5"
   port: 8778
@@ -64,14 +72,15 @@ qwen32b: # confirmed 2025-07-21 14:05:09
   dtype: bfloat16
   enable-reasoning: yes
   reasoning-parser: deepseek_r1
+  max-model-len: 32768 # max is 40960 (doesnt fit into 80GB)
   # enable-auto-tool-choice: yes
   # tool-call-parser: hermes
-  resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 80}
+  resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 75}
 
-qwen235b: # confirmed 2025-07-21 14:05:09
+qwen235b-base: # confirmed 2025-07-21 14:05:09
   # model: Qwen/Qwen3-235B-A22B-FP8
   model: "{hf_dir}/models--Qwen--Qwen3-235B-A22B-FP8/snapshots/f49ca1a1be0fcb351b40a0d22ed4166c664e0f39"
-  port: 8668
+  port: 8661
   # dtype: fp8
   gpu-memory-utilization: 0.5
   # max-model-len: 40960
@@ -82,6 +91,29 @@ qwen235b: # confirmed 2025-07-21 14:05:09
   reasoning-parser: deepseek_r1
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
+qwen235b: # unconfirmed
+  model: "{hf_dir}/models--Qwen--Qwen3-235B-A22B-Instruct-2507-FP8/snapshots/ba82a1060073fa0ecdc70d7b1922ec071f60cf3e"
+  port: 8668
+  gpu-memory-utilization: 0.5
+  max-model-len: 65536
+  tensor-parallel-size: 8
+  enable-expert-parallel: yes
+  enable-reasoning: yes
+  reasoning-parser: deepseek_r1
+  resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
+
+qwen235b-t: # unconfirmed
+  model: "{hf_dir}/models--Qwen--Qwen3-235B-A22B-Thinking-2507-FP8/snapshots/c3ce9d7adab3b55a3a673acf6abb02a3310fd48b"
+  port: 8666
+  gpu-memory-utilization: 0.5
+  tensor-parallel-size: 8
+  enable-expert-parallel: yes
+  enable-reasoning: yes
+  reasoning-parser: deepseek_r1
+  resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
+
+
+# Qwen/Qwen3-235B-A22B-Thinking-2507-FP8
 
 mistral7b: # stale
   model: mistralai/Mistral-7B-Instruct-v0.3
@@ -89,15 +121,19 @@ mistral7b: # stale
   port: 8007
   # gpu-memory-utilization: 0.9
   max-model-len: 16384
-  tokenizer-mode: mistral
   max-num-seqs: 1
+  tokenizer-mode: mistral
+  config-format: mistral
+  load-format: mistral
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
 
-mistral-small: # unconfirmed
+mistral-small: # confirmed 2025-07-21 17:04:22 (but local tokenizer not working)
   model: mistralai/Mistral-Small-3.2-24B-Instruct-2506
   dtype: bfloat16
-  tokenizer-mode: mistral
   port: 8070
+  tokenizer-mode: mistral
+  config-format: mistral
+  load-format: mistral
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
 
 
@@ -108,7 +144,7 @@ hunyuan: # confirmed 2025-07-21 14:05:09
   # max-model-len: 65536
   trust-remote-code: yes
   tensor-parallel-size: 2
-  resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
+  resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 75}
 
 
 llama70b: # confirmed
@@ -122,6 +158,18 @@ llama70b: # confirmed
   # tool-call-parser: llama3_json
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
+
+llama70b-4gpu: # unconfirmed
+  # model: meta-llama/Llama-3.3-70B-Instruct
+  model: "{hf_dir}/models--meta-llama--Llama-3.3-70B-Instruct/snapshots/6f6073b423013f6a7d4d9f39144961bfbfbc386b"
+  dtype: bfloat16
+  port: 8300
+  # max-model-len: 65536
+  tensor-parallel-size: 4
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  resources: {cpu: 32, ram: 256, gpu: 4, gpu-ram: 75}
 
 llama70b-8gpu:
   # model: meta-llama/Llama-3.3-70B-Instruct
@@ -150,15 +198,16 @@ llama4-scout: # stale
   # enable-auto-tool-choice: yes
   # tool-call-parser: llama3_json
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
-  resources: {cpu: 32, ram: 256, gpu: 4, gpu-ram: 80}
+  resources: {cpu: 32, ram: 512, gpu: 4, gpu-ram: 80}
 
 
-llama4-scout-8gpu: # stale
+llama4-scout-8gpu: # confirmed 2025-07-25 20:46:21
   # model: meta-llama/Llama-4-Scout-17B-16E-Instruct
   model: "{hf_dir}/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8"
   dtype: bfloat16
   port: 8401
   # max-model-len: 65536
+  max-model-len: 65536
   tensor-parallel-size: 8
   # enable-auto-tool-choice: yes
   # tool-call-parser: llama4_json
@@ -166,9 +215,9 @@ llama4-scout-8gpu: # stale
   # enable-auto-tool-choice: yes
   # tool-call-parser: llama3_json
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
-  resources: {cpu: 32, ram: 256, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
+  resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
-llama4-mav: # confirmed
+llama4-mav: # confirmed 2025-07-24 11:32:55
   # model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
   model: "{hf_dir}/models--meta-llama--Llama-4-Maverick-17B-128E-Instruct-FP8/snapshots/94125d2bd83076b21eed33119525e29eaf3894f4"
   max-model-len: 400000

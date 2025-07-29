@@ -169,6 +169,7 @@ def launch_llm(cfg: fig.Configuration):
 	args = settings
 	args.update({k: v.format(vllm_dir=vllm_dir, hf_dir=hf_dir) for k, v in args.items() if isinstance(v, str)})
 
+	args['host'] = '0.0.0.0'
 	if port is not None:
 		args['port'] = port
 	# model_name = args['model']

@@ -1,0 +1,21 @@
+
+_base: [cluster]
+
+include-cmds: yes # in manifest
+
+
+time-limit: 16
+
+bid: 50
+
+
+#gpu: 1
+ram: 64
+cpu: 4
+
+# command-path: /fast/fleeb/venice/todo.sh
+command-path: "{repo}/assets/todo.sh"
+# template-path: /home/fleeb/workspace/code/mpi-cluster/data/template.sh
+#working-dir: /home/fleeb/workspace/code/alphageometry
+working-dir: /home/fleeb/workspace/code/ludwig
+
