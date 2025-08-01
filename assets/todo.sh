@@ -244,19 +244,55 @@
 
 ###
 
-#fig eval cls s/oracle-tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_314 16291415.0
-#fig eval cls s/zshot ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_314 16291415.1
-#fig eval cls s/zcot ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_314 16291415.2
-#fig eval cls s/fs ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_314 16291415.3
-#fig eval cls s/cot ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_314 16291415.4
-#fig eval cls s/tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_314 16291415.5
+#fig eval cls s/zshot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_341 16316161.0
+#fig eval cls s/zcot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_341 16316161.1
+#fig eval cls s/mv ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 --temperature 1.0 # job_341 16316161.2
+#fig eval cls s/fs ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_341 16316161.3
+#fig eval cls s/cot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_341 16316161.4
+#fig eval cls s/tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_341 16316161.5
+#fig eval cls s/oracle-tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_341 16316161.6
 
-#fig eval cls s/oracle-tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_314 16291415.6
-#fig eval cls s/zshot ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_314 16291415.7
-#fig eval cls s/zcot ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_314 16291415.8
-#fig eval cls s/fs ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_314 16291415.9
-#fig eval cls s/cot ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_314 16291415.10
-#fig eval cls s/tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g190.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_314 16291415.11
+#fig eval cls s/zshot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_341 16316161.7
+#fig eval cls s/zcot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_341 16316161.8
+#fig eval cls s/mv ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 --temperature 1.0 # job_341 16316161.9
+#fig eval cls s/fs ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_341 16316161.10
+#fig eval cls s/cot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_341 16316161.11
+#fig eval cls s/tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 # job_341 16316161.12
+#fig eval cls s/oracle-tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 # job_341 16316161.13
 
 
 
+
+# fig eval cls s/zshot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 --enable-thinking yes
+# fig eval cls s/zcot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 --enable-thinking yes
+# fig eval cls s/mv ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 --temperature 1.0 --enable-thinking yes
+# fig eval cls s/fs ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 --enable-thinking yes
+# fig eval cls s/cot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 --enable-thinking yes
+# fig eval cls s/tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 --enable-thinking yes
+# fig eval cls s/oracle-tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 --enable-thinking yes
+
+# fig eval cls s/zshot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 --enable-thinking yes
+# fig eval cls s/zcot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 --enable-thinking yes
+# fig eval cls s/mv ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 --temperature 1.0 --enable-thinking yes
+# fig eval cls s/fs ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 --enable-thinking yes
+# fig eval cls s/cot ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 --enable-thinking yes
+# fig eval cls s/tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep compact --max-tokens 8192 --enable-thinking yes
+# fig eval cls s/oracle-tool ttt/tools ttt/take-the-middle j/format c/vllm --addr g102.internal.cluster.is.localnet:8600 --limit 100 --obs-rep moves --max-tokens 8192 --enable-thinking yes
+
+##
+
+#fig eval cls s/zshot chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep fen --max-tokens 8192 # job_343 16316858.0
+#fig eval cls s/zcot chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep fen --max-tokens 8192 # job_343 16316858.1
+#fig eval cls s/mv chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep fen --max-tokens 8192 --temperature 1.0 # job_343 16316858.2
+# # fig eval cls s/fs chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep fen --max-tokens 8192
+#fig eval cls s/cot chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep fen --max-tokens 8192 # job_343 16316858.3
+#fig eval cls s/tool chess/tools chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep fen --max-tokens 8192 # job_343 16316858.4
+# # fig eval cls s/oracle-tool chess/tools chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep fen --max-tokens 8192
+
+# # fig eval cls s/zshot chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192
+#fig eval cls s/zcot chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192 # job_343 16316858.5
+#fig eval cls s/mv chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192 --temperature 1.0 # job_343 16316858.6
+# # fig eval cls s/fs chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192
+# # fig eval cls s/cot chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192
+#fig eval cls s/tool chess/tools chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192 # job_343 16316858.7
+#fig eval cls s/oracle-tool chess/tools chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192 # job_343 16316858.8
