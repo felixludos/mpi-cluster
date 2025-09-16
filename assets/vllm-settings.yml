@@ -305,6 +305,7 @@ gemma27b: # confirmed 2025-07-21 14:05:09
   dtype: bfloat16
   max-model-len: 65536
   port: 8200
+  # gpu-memory-utilization: 0.9
   # enable-auto-tool-choice: yes
   # tool-call-parser: pythonic
   # chat-template: "{vllm_dir}/examples/tool_chat_template_gemma3_pythonic.jinja"

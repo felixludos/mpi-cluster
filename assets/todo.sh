@@ -296,3 +296,5 @@
 # # fig eval cls s/cot chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192
 #fig eval cls s/tool chess/tools chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192 # job_343 16316858.7
 #fig eval cls s/oracle-tool chess/tools chess/puzzle j/format c/vllm --addr g123.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192 # job_343 16316858.8
+
+#sleep 10000 # job_364 16358410.0

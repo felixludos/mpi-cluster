@@ -632,10 +632,13 @@ def start_vllm_server(cfg: fig.Configuration):
 		cli_env_setup, signal, os, uvloop, envs, setup_server, load_log_config, lifespan, Namespace, FastAPI,
 		router, mount_metrics, CORSMiddleware, HTTPException, Request, ErrorResponse, JSONResponse,
 		RequestValidationError, AuthenticationMiddleware, XRequestIdMiddleware, iterate_in_threadpool,
-		importlib, inspect)
+		decorate_logs, maybe_register_tokenizer_info_endpoint, router,
+		importlib, inspect, ErrorInfo, ScalingMiddleware, _log_streaming_response, _log_non_streaming_response)
+
+	# see `router` and `maybe_register_tokenizer_info_endpoint` to find a simpler way to add an endpoint
 
 	# @asynccontextmanager
-	async def time_lifespand(app):
+	async def time_lifespan(app):
 		"""Lifespan context manager for the app."""
 		async with lifespan(app):
 			# startup complete
@@ -648,14 +651,15 @@ def start_vllm_server(cfg: fig.Configuration):
 			# with logpath.open('a') as f:
 			# 	f.write('\t'.join(map(str, shutdown_message)) + '\n')
 
+
 	def build_app(args: Namespace) -> FastAPI:
 		if args.disable_fastapi_docs:
 			app = FastAPI(openapi_url=None,
 						  docs_url=None,
 						  redoc_url=None,
-						  lifespan=time_lifespand)
+						  lifespan=time_lifespan)
 		else:
-			app = FastAPI(lifespan=time_lifespand)
+			app = FastAPI(lifespan=time_lifespan)
 		app.include_router(router)
 		app.root_path = args.root_path
 
@@ -671,9 +675,10 @@ def start_vllm_server(cfg: fig.Configuration):
 
 		@app.exception_handler(HTTPException)
 		async def http_exception_handler(_: Request, exc: HTTPException):
-			err = ErrorResponse(message=exc.detail,
+			err = ErrorResponse(
+				error=ErrorInfo(message=exc.detail,
 								type=HTTPStatus(exc.status_code).phrase,
-								code=exc.status_code)
+								code=exc.status_code))
 			return JSONResponse(err.model_dump(), status_code=exc.status_code)
 
 		@app.exception_handler(RequestValidationError)
@@ -687,18 +692,21 @@ def start_vllm_server(cfg: fig.Configuration):
 			else:
 				message = exc_str
 
-			err = ErrorResponse(message=message,
-								type=HTTPStatus.BAD_REQUEST.phrase,
-								code=HTTPStatus.BAD_REQUEST)
+			err = ErrorResponse(error=ErrorInfo(message=message,
+												type=HTTPStatus.BAD_REQUEST.phrase,
+												code=HTTPStatus.BAD_REQUEST))
 			return JSONResponse(err.model_dump(),
 								status_code=HTTPStatus.BAD_REQUEST)
 
 		# Ensure --api-key option from CLI takes precedence over VLLM_API_KEY
-		if token := args.api_key or envs.VLLM_API_KEY:
-			app.add_middleware(AuthenticationMiddleware, api_token=token)
+		if tokens := [key for key in (args.api_key or [envs.VLLM_API_KEY]) if key]:
+			app.add_middleware(AuthenticationMiddleware, tokens=tokens)
 
 		if args.enable_request_id_headers:
 			app.add_middleware(XRequestIdMiddleware)
+
+		# Add scaling middleware to check for scaling state
+		app.add_middleware(ScalingMiddleware)
 
 		if envs.VLLM_DEBUG_LOG_API_SERVER_RESPONSE:
 			logger.warning("CAUTION: Enabling log response in the API Server. "
@@ -712,8 +720,17 @@ def start_vllm_server(cfg: fig.Configuration):
 					section async for section in response.body_iterator
 				]
 				response.body_iterator = iterate_in_threadpool(iter(response_body))
-				logger.info("response_body={%s}",
-							response_body[0].decode() if response_body else None)
+				# Check if this is a streaming response by looking at content-type
+				content_type = response.headers.get("content-type", "")
+				is_streaming = content_type == "text/event-stream; charset=utf-8"
+
+				# Log response body based on type
+				if not response_body:
+					logger.info("response_body={<empty>}")
+				elif is_streaming:
+					_log_streaming_response(response, response_body)
+				else:
+					_log_non_streaming_response(response_body)
 				return response
 
 		for middleware in args.middleware:
@@ -733,6 +750,10 @@ def start_vllm_server(cfg: fig.Configuration):
 
 	async def run_server(args, **uvicorn_kwargs) -> None:
 		"""Run a single-worker API server."""
+
+		# Add process-specific prefix to stdout and stderr.
+		decorate_logs("APIServer")
+
 		listen_address, sock = setup_server(args)
 		await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
 
@@ -753,7 +774,11 @@ def start_vllm_server(cfg: fig.Configuration):
 		if log_config is not None:
 			uvicorn_kwargs['log_config'] = log_config
 
-		async with build_async_engine_client(args, client_config) as engine_client:
+		async with build_async_engine_client(
+				args,
+				client_config=client_config,
+		) as engine_client:
+			maybe_register_tokenizer_info_endpoint(args)
 			app = build_app(args)
 
 			@app.get("/shutdown")
@@ -785,6 +810,8 @@ def start_vllm_server(cfg: fig.Configuration):
 				ssl_certfile=args.ssl_certfile,
 				ssl_ca_certs=args.ssl_ca_certs,
 				ssl_cert_reqs=args.ssl_cert_reqs,
+				h11_max_incomplete_event_size=args.h11_max_incomplete_event_size,
+				h11_max_header_count=args.h11_max_header_count,
 				**uvicorn_kwargs,
 			)
 
@@ -794,91 +821,6 @@ def start_vllm_server(cfg: fig.Configuration):
 		finally:
 			sock.close()
 
-	# #########
-	# async def run_server(args, **uvicorn_kwargs) -> None:
-	# 	logger.info("vLLM API server version %s", VLLM_VERSION)
-	# 	logger.info("args: %s", args)
-	#
-	# 	if args.tool_parser_plugin and len(args.tool_parser_plugin) > 3:
-	# 		ToolParserManager.import_tool_parser(args.tool_parser_plugin)
-	#
-	# 	valid_tool_parses = ToolParserManager.tool_parsers.keys()
-	# 	if args.enable_auto_tool_choice \
-	# 		and args.tool_call_parser not in valid_tool_parses:
-	# 		raise KeyError(f"invalid tool call parser: {args.tool_call_parser} "
-	# 					f"(chose from {{ {','.join(valid_tool_parses)} }})")
-	#
-	# 	valid_reasoning_parses = ReasoningParserManager.reasoning_parsers.keys()
-	# 	if args.reasoning_parser \
-	# 		and args.reasoning_parser not in valid_reasoning_parses:
-	# 		raise KeyError(
-	# 			f"invalid reasoning parser: {args.reasoning_parser} "
-	# 			f"(chose from {{ {','.join(valid_reasoning_parses)} }})")
-	#
-	# 	# workaround to make sure that we bind the port before the engine is set up.
-	# 	# This avoids race conditions with ray.
-	# 	# see https://github.com/vllm-project/vllm/issues/8204
-	# 	sock_addr = (args.host or "", args.port)
-	# 	sock = create_server_socket(sock_addr)
-	#
-	# 	# workaround to avoid footguns where uvicorn drops requests with too
-	# 	# many concurrent requests active
-	# 	set_ulimit()
-	#
-	# 	def signal_handler(*_) -> None:
-	# 		# Interrupt server on sigterm while initializing
-	# 		raise KeyboardInterrupt("terminated")
-	#
-	# 	signal.signal(signal.SIGTERM, signal_handler)
-	#
-	# 	async with build_async_engine_client(args) as engine_client:
-	# 		app = build_app(args)
-	#
-	# 		@app.get("/shutdown")
-	# 		async def shutdown():
-	# 			"""Gracefully stop Uvicorn and the engine."""
-	# 			def _stop():
-	# 				print("Received shutdown request …")
-	# 				os.kill(os.getpid(), signal.SIGINT)   # lets Uvicorn close cleanly
-	# 			threading.Thread(target=_stop).start()
-	# 			return 'Shutting down server.'
-	#
-	# 		vllm_config = await engine_client.get_vllm_config()
-	# 		await init_app_state(engine_client, vllm_config, app.state, args)
-	#
-	# 		def _listen_addr(a: str) -> str:
-	# 			if is_valid_ipv6_address(a):
-	# 				return '[' + a + ']'
-	# 			return a or "0.0.0.0"
-	#
-	# 		is_ssl = args.ssl_keyfile and args.ssl_certfile
-	# 		logger.info("Starting vLLM API server on http%s://%s:%d",
-	# 					"s" if is_ssl else "", _listen_addr(sock_addr[0]),
-	# 					sock_addr[1])
-	#
-	# 		shutdown_task = await serve_http(
-	# 			app,
-	# 			sock=sock,
-	# 			enable_ssl_refresh=args.enable_ssl_refresh,
-	# 			host=args.host,
-	# 			port=args.port,
-	# 			log_level=args.uvicorn_log_level,
-	# 			# NOTE: When the 'disable_uvicorn_access_log' value is True,
-	# 			# no access log will be output.
-	# 			access_log=not args.disable_uvicorn_access_log,
-	# 			# timeout_keep_alive=TIMEOUT_KEEP_ALIVE,
-	# 			ssl_keyfile=args.ssl_keyfile,
-	# 			ssl_certfile=args.ssl_certfile,
-	# 			ssl_ca_certs=args.ssl_ca_certs,
-	# 			ssl_cert_reqs=args.ssl_cert_reqs,
-	# 			**uvicorn_kwargs,
-	# 		)
-	#
-	# 	# NB: Await server shutdown only after the backend context is exited
-	# 	try:
-	# 		await shutdown_task
-	# 	finally:
-	# 		sock.close()
 
 	try:
 		cli_env_setup()
