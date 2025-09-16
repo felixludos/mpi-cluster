@@ -300,6 +300,22 @@ llama1b-large: # stale
   resources: {cpu: 4, ram: 32, gpu: 1, gpu-ram: 20}
 
 
+gemma3n4: # unconfirmed
+  model: google/gemma-3n-E4B-it
+  dtype: bfloat16
+  port: 8820
+  # max-model-len: 16384
+  # max-num-seqs: 4
+  resources: {cpu: 4, ram: 16, gpu: 1, gpu-ram: 8}
+
+gemma3n2: # unconfirmed
+  model: google/gemma-3n-E2B-it
+  dtype: bfloat16
+  port: 8802
+  # max-model-len: 16384
+  # max-num-seqs: 4
+  resources: {cpu: 4, ram: 16, gpu: 1, gpu-ram: 8}
+
 gemma27b: # confirmed 2025-07-21 14:05:09
   model: google/gemma-3-27b-it
   dtype: bfloat16
