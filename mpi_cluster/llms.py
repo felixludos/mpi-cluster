@@ -328,7 +328,9 @@ def load_serving_log(path, location=None):
 		if info['id'] not in items:
 			items[info['id']] = {**{key: info[key] for key in props}, 'location': location, 'events': {}}
 		if info['event'] in items[info['id']]['events']:
-			raise ValueError(f'{info} already exists in {items[info["id"]]}')
+			# raise ValueError(f'{info} already exists in {items[info["id"]]}')
+			# duplicate event - ignore
+			continue
 		items[info['id']]['events'][info['event']] = datetime.strptime(info['timestamp'], '%y%m%d-%H%M%S')
 
 	for item in items.values():

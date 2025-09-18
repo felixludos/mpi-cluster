@@ -9,21 +9,23 @@
 #   openai: 9
 
 
-gpt20: # unconfirmed
+gpt20b: # unconfirmed
   # model: openai/gpt-oss-20b
   model: "{hf_dir}/models--openai--gpt-oss-20b/snapshots/2e8f8052ee2aeee907f76e08c08b9fdde8677ca8"
   port: 8900
   dtype: bfloat16
+  # async-scheduling: yes
   # max-model-len: 32768
   # enable-auto-tool-choice: yes
   resources: {cpu: 16, ram: 128, gpu: 1, gpu-ram: 75}
 
-gpt120: # unconfirmed
+gpt120b: # unconfirmed
   # model: openai/gpt-oss-120b
   model: "{hf_dir}/models--openai--gpt-oss-120b/snapshots/eabf0c518da7584a2e7dab4ab272709785a72126"
   port: 8998
   dtype: bfloat16
   tensor-parallel-size: 8
+  # async-scheduling: yes
   # enforce-eager: yes
   # quantization: modelopt
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
