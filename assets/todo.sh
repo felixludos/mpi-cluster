@@ -351,9 +351,9 @@
 #fig eval cls s/mv chess/puzzle j/format c/vllm --addr g139.internal.cluster.is.localnet:8900 --limit 100 --obs-rep active --max-tokens 8192 --temperature 1.0 # job_381 16466004.9 # job_386 16473181.0 # job_387 16473185.3
 #fig eval cls s/oracle-tool chess/tools chess/puzzle j/format c/vllm --addr g139.internal.cluster.is.localnet:8900 --limit 100 --obs-rep pgn --max-tokens 8192 # job_381 16466004.20 # job_382 16466133.3 # job_384 16466882.8 # job_386 16473181.4 # job_387 16473185.4
 
-fig eval cls s/zshot ttt/take-the-middle j/format c/vllm --addr g142.internal.cluster.is.localnet:8900 --limit 100 --obs-rep compact --max-tokens 8192
-
-
+#fig eval cls s/oracle-tool chess/tools chess/puzzle j/format c/vllm --addr g139.internal.cluster.is.localnet:8900 --limit 100 --obs-rep pgn --max-tokens 8192 # job_389 16473233.0
+#fig eval cls s/zshot chess/puzzle j/format c/vllm --addr g139.internal.cluster.is.localnet:8900 --limit 100 --obs-rep pgn --max-tokens 8192 # job_389 16473233.1
+#fig eval cls s/zcot chess/puzzle j/format c/vllm --addr g139.internal.cluster.is.localnet:8900 --limit 100 --obs-rep pgn --max-tokens 8192 # job_389 16473233.2
 
 
 

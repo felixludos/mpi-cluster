@@ -9,7 +9,7 @@
 #   openai: 9
 
 
-gpt20b: # unconfirmed
+gpt20b: # confirmed 2025-09-19 13:04:19
   # model: openai/gpt-oss-20b
   model: "{hf_dir}/models--openai--gpt-oss-20b/snapshots/2e8f8052ee2aeee907f76e08c08b9fdde8677ca8"
   port: 8900
