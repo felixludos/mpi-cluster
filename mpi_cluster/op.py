@@ -381,8 +381,9 @@ def create_jobs(cfg: fig.Configuration, commands: str = None, location: str = _n
 	env_vars = cfg.pull("env-vars", {})
 	if env_vars is not None:
 		base_env.update(env_vars)
+		env_vars.update(base_env)
 	if env_vars:
-		sub.append(f'environment = {";".join(f"{k}={v}" for k, v in base_env.items())}')
+		sub.append(f'environment = {";".join(f"{k}={v}" for k, v in env_vars.items())}')
 	sub.append(f'request_memory = {cfg.pulls("ram", "mem", default=1) * 1024}')
 	sub.append(f'request_cpus = {cfg.pull("cpu", 1)}')
 

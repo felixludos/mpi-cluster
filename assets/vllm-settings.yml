@@ -14,6 +14,8 @@ gpt20b: # unconfirmed
   model: "{hf_dir}/models--openai--gpt-oss-20b/snapshots/2e8f8052ee2aeee907f76e08c08b9fdde8677ca8"
   port: 8900
   dtype: bfloat16
+  enable-auto-tool-choice: yes
+  tool-call-parser: openai
   # async-scheduling: yes
   # max-model-len: 32768
   # enable-auto-tool-choice: yes
@@ -25,6 +27,8 @@ gpt120b: # unconfirmed
   port: 8998
   dtype: bfloat16
   tensor-parallel-size: 8
+  enable-auto-tool-choice: yes
+  tool-call-parser: openai
   # async-scheduling: yes
   # enforce-eager: yes
   # quantization: modelopt
