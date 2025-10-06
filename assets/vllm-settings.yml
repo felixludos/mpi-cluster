@@ -26,13 +26,26 @@ gpt120b: # unconfirmed
   model: "{hf_dir}/models--openai--gpt-oss-120b/snapshots/eabf0c518da7584a2e7dab4ab272709785a72126"
   port: 8998
   dtype: bfloat16
-  tensor-parallel-size: 8
+  tensor-parallel-size: 4
   enable-auto-tool-choice: yes
   tool-call-parser: openai
   # async-scheduling: yes
   # enforce-eager: yes
   # quantization: modelopt
-  resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
+  resources: {cpu: 32, ram: 512, gpu: 4, gpu-ram: 75, gpu-name: H100-80}
+
+gpt120b-2gpu: # confirmed 2025-09-20 12:10:35
+  # model: openai/gpt-oss-120b
+  model: "{hf_dir}/models--openai--gpt-oss-120b/snapshots/eabf0c518da7584a2e7dab4ab272709785a72126"
+  port: 8998
+  dtype: bfloat16
+  tensor-parallel-size: 2
+  enable-auto-tool-choice: yes
+  tool-call-parser: openai
+  # async-scheduling: yes
+  # enforce-eager: yes
+  # quantization: modelopt
+  resources: {cpu: 32, ram: 512, gpu: 2, gpu-ram: 120, gpu-name: B200}
 
 
 phi4: # confirmed
@@ -140,6 +153,28 @@ qwen235b-t: # unconfirmed
   reasoning-parser: deepseek_r1
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
+qwen-next: # unconfirmed
+  model: "{hf_dir}/models--Qwen--Qwen3-Next-80B-A3B-Instruct/snapshots/9c7f2fbe84465e40164a94cc16cd30b6999b0cc7"
+  port: 8680
+  gpu-memory-utilization: 0.8
+  tensor-parallel-size: 4
+  # enable-expert-parallel: yes
+  # enable-reasoning: yes
+  # reasoning-parser: deepseek_r1
+  served-model-name: qwen3-next
+  resources: {cpu: 32, ram: 256, gpu: 4, gpu-ram: 75}
+
+qwen-next-t: # unconfirmed
+  model: "{hf_dir}/models--Qwen--Qwen3-Next-80B-A3B-Thinking/snapshots/e502dd4100cc68c0de57643fd4317ec93a128670"
+  port: 8660
+  gpu-memory-utilization: 0.8
+  tensor-parallel-size: 4
+  # enable-expert-parallel: yes
+  # enable-reasoning: yes
+  # reasoning-parser: deepseek_r1
+  served-model-name: qwen3-next
+  resources: {cpu: 32, ram: 256, gpu: 4, gpu-ram: 75}
+
 
 # Qwen/Qwen3-235B-A22B-Thinking-2507-FP8
 
@@ -155,13 +190,30 @@ mistral7b: # stale
   load-format: mistral
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 20}
 
-mistral-small: # confirmed 2025-07-21 17:04:22 (but local tokenizer not working)
-  model: mistralai/Mistral-Small-3.2-24B-Instruct-2506
+mistral-small: # confirmed 2025-09-20 16:12:58
+  # model: mistralai/Mistral-Small-3.2-24B-Instruct-2506
+  model: "{hf_dir}/models--mistralai--Mistral-Small-3.2-24B-Instruct-2506/snapshots/46a27874d7f7a7b38344124d32a7a3c4589d3b53"
   dtype: bfloat16
   port: 8070
   tokenizer-mode: mistral
   config-format: mistral
   load-format: mistral
+  tool-call-parser: mistral
+  enable-auto-tool-choice: yes
+  # limit-mm-per-prompt: 10
+  resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
+
+magistral: # confirmed 2025-09-20 16:38:33 
+  # model: mistralai/Magistral-Small-2509
+  model: "{hf_dir}/models--mistralai--Magistral-Small-2509/snapshots/92ad3595fd6f2c6299dadbc013460b313a29c063"
+  dtype: bfloat16
+  port: 8070
+  tokenizer-mode: mistral
+  config-format: mistral
+  load-format: mistral
+  tool-call-parser: mistral
+  enable-auto-tool-choice: yes
+  # limit-mm-per-prompt: 10
   resources: {cpu: 16, ram: 64, gpu: 1, gpu-ram: 50}
 
 
@@ -173,6 +225,16 @@ hunyuan: # confirmed 2025-07-21 14:05:09
   trust-remote-code: yes
   tensor-parallel-size: 2
   resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 75}
+
+k2: # confirmed 2025-09-20 12:25:27
+  # model: LLM360/K2-Think
+  model: "{hf_dir}/models--LLM360--K2-Think/snapshots/64d16d025d16ed46b785fce99b2b548901b993d9"
+  dtype: bfloat16
+  port: 8080
+  max-model-len: 48000
+  resources: {cpu: 32, ram: 256, gpu: 1, gpu-ram: 75}
+
+# seed oss
 
 
 llama70b: # confirmed
@@ -258,6 +320,31 @@ llama4-mav: # confirmed 2025-07-24 11:32:55
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_pythonic.jinja"
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
+llama4-scout-2gpu: # unconfirmed
+  # model: meta-llama/Llama-4-Scout-17B-16E-Instruct
+  model: "{hf_dir}/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8"
+  dtype: bfloat16
+  port: 8402
+  # max-model-len: 65536
+  max-model-len: 65536
+  tensor-parallel-size: 2
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama4_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_json.jinja"
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: llama3_json
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
+  resources: {cpu: 32, ram: 512, gpu: 2, gpu-ram: 150, gpu-name: B200}
+
+llama4-mav-4gpu: # unconfirmed
+  # model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
+  model: "{hf_dir}/models--meta-llama--Llama-4-Maverick-17B-128E-Instruct-FP8/snapshots/94125d2bd83076b21eed33119525e29eaf3894f4"
+  max-model-len: 400000
+  tensor-parallel-size: 4
+  port: 8444
+  resources: {cpu: 32, ram: 512, gpu: 4, gpu-ram: 150, gpu-name: B200}
+
+
 llama8b: # stale
   model: meta-llama/Llama-3.1-8B-Instruct
   dtype: bfloat16
@@ -335,6 +422,15 @@ gemma27b: # confirmed 2025-07-21 14:05:09
 
 gemma4b: # stale
   model: google/gemma-3-4b-it
+  dtype: bfloat16
+  port: 8022
+  # enable-auto-tool-choice: yes
+  # tool-call-parser: pythonic
+  # chat-template: "{vllm_dir}/examples/tool_chat_template_gemma3_pythonic.jinja"
+  resources: {cpu: 8, ram: 64, gpu: 1, gpu-ram: 20}
+
+gemma-tiny: # confirmed 2025-09-20 12:22:41
+  model: google/gemma-3-270m-it
   dtype: bfloat16
   port: 8002
   # enable-auto-tool-choice: yes

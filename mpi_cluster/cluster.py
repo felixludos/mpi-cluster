@@ -35,6 +35,8 @@ GPU_NAMES = {
     
 	'H100': 'NVIDIA H100',
 	'H100-80': 'NVIDIA H100 80GB HBM3',
+    
+	'B200': 'NVIDIA B200',
 	
 	'P40': 'Tesla P40',
 	'P100': 'Tesla P100-PCIE-16GB',
