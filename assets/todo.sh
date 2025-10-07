@@ -677,15 +677,86 @@
 #fig eval cls s/oracle-tool chess/tool-adapter chess/puzzle c/vllm --addr i201.internal.cluster.is.localnet:8998 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool --adapter-path "'{root}/checkpoints/tree-build-ChessPuzzle-c635_250925-122524'" --rep-index 9 # job_444 16504363.19
 
 
-##
+## 2025-10-06 11:55:05
+
+#   status   model                                               address                 live         startup   loc    port
+#  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#   ONLINE   nvidia/Llama-3_3-Nemotron-Super-49B-v1              http://localhost:8015   2 minutes    4.2       i203   8771
+#   ONLINE   microsoft/Phi-4-reasoning                           http://localhost:8014   5 minutes    2.7       g189   8050
+#   ONLINE   google/gemma-3-27b-it                               http://localhost:8013   10 minutes   3.1       g190   8200
+#   ONLINE   Qwen/Qwen3-235B-A22B-Thinking-2507-FP8              http://localhost:8012   16 minutes   4.3       i302   8866
+#   ONLINE   openai/gpt-oss-20b                                  http://localhost:8003   44 minutes   1.4       g198   8900
+#   ONLINE   openai/gpt-oss-120b                                 http://localhost:8005   37 minutes   8.2       i208   8998
+#   ONLINE   meta-llama/Llama-3.3-70B-Instruct                   http://localhost:8004   41 minutes   6.3       g137   8300
+#   ONLINE   Qwen/Qwen3-Next-80B-A3B-Thinking                    http://localhost:8007   26 minutes   20.9      g129   8660
+#   ONLINE   Qwen/Qwen3-Next-80B-A3B-Instruct                    http://localhost:8011   22 minutes   26.1      g193   8680
+#   ONLINE   meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8   http://localhost:8006   27 minutes   22.5      i301   8444
+#   ONLINE   meta-llama/Llama-4-Scout-17B-16E-Instruct           http://localhost:8009   26 minutes   26.2      i303   8402
+
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g189.internal.cluster.is.localnet:8050 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_462 16518333.0
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g190.internal.cluster.is.localnet:8200 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_462 16518333.1
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr i302.internal.cluster.is.localnet:8866 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_462 16518333.2
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g198.internal.cluster.is.localnet:8900 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_462 16518333.3
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr i208.internal.cluster.is.localnet:8998 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_462 16518333.4
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g137.internal.cluster.is.localnet:8300 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_462 16518333.5
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g129.internal.cluster.is.localnet:8660 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_462 16518333.6
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g193.internal.cluster.is.localnet:8680 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_462 16518333.7
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr i301.internal.cluster.is.localnet:8444 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_462 16518333.8
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr i303.internal.cluster.is.localnet:8402 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_462 16518333.9
+
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i203.internal.cluster.is.localnet:8771 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.0
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g189.internal.cluster.is.localnet:8050 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.1
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g190.internal.cluster.is.localnet:8200 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.2
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i302.internal.cluster.is.localnet:8866 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.3
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g198.internal.cluster.is.localnet:8900 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.4
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i208.internal.cluster.is.localnet:8998 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.5
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g137.internal.cluster.is.localnet:8300 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.6
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g129.internal.cluster.is.localnet:8660 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.7
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g193.internal.cluster.is.localnet:8680 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.8
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i301.internal.cluster.is.localnet:8444 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.9
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i303.internal.cluster.is.localnet:8402 --limit 100 --obs-rep active --max-tokens 8192 # job_463 16518334.10
+
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i203.internal.cluster.is.localnet:8771 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.0
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g189.internal.cluster.is.localnet:8050 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.1
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g190.internal.cluster.is.localnet:8200 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.2
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i302.internal.cluster.is.localnet:8866 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.3
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g198.internal.cluster.is.localnet:8900 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.4
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i208.internal.cluster.is.localnet:8998 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.5
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g137.internal.cluster.is.localnet:8300 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.6
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g129.internal.cluster.is.localnet:8660 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.7
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g193.internal.cluster.is.localnet:8680 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.8
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i301.internal.cluster.is.localnet:8444 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.9
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i303.internal.cluster.is.localnet:8402 --limit 100 --obs-rep white --max-tokens 8192 # job_464 16518339.10
+
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g189.internal.cluster.is.localnet:8050 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_465 16518342.0
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g190.internal.cluster.is.localnet:8200 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_465 16518342.1
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr i302.internal.cluster.is.localnet:8866 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_465 16518342.2
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g198.internal.cluster.is.localnet:8900 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_465 16518342.3
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr i208.internal.cluster.is.localnet:8998 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_465 16518342.4
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g137.internal.cluster.is.localnet:8300 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_465 16518342.5
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g129.internal.cluster.is.localnet:8660 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_465 16518342.6
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g193.internal.cluster.is.localnet:8680 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_465 16518342.7
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr i301.internal.cluster.is.localnet:8444 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_465 16518342.8
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr i303.internal.cluster.is.localnet:8402 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_465 16518342.9
+
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i203.internal.cluster.is.localnet:8771 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.0
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g189.internal.cluster.is.localnet:8050 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.1
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g190.internal.cluster.is.localnet:8200 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.2
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i302.internal.cluster.is.localnet:8866 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.3
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g198.internal.cluster.is.localnet:8900 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.4
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i208.internal.cluster.is.localnet:8998 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.5
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g137.internal.cluster.is.localnet:8300 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.6
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g129.internal.cluster.is.localnet:8660 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.7
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g193.internal.cluster.is.localnet:8680 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.8
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i301.internal.cluster.is.localnet:8444 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.9
+#fig eval cls s/zcot chess/puzzle c/vllm --addr i303.internal.cluster.is.localnet:8402 --limit 100 --obs-rep fen --max-tokens 8192 # job_466 16518346.10
 
 
-
-
-
-
-
-
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g137.internal.cluster.is.localnet:8680 --limit 100 --obs-rep white --max-tokens 8192 --strategy.template encourage-tool # job_468 16518514.0
+#fig eval cls s/oracle-tool chess/tools chess/puzzle c/vllm --addr g137.internal.cluster.is.localnet:8680 --limit 100 --obs-rep fen --max-tokens 8192 --strategy.template encourage-tool # job_468 16518514.1
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g137.internal.cluster.is.localnet:8680 --limit 100 --obs-rep active --max-tokens 8192 # job_468 16518514.2
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g137.internal.cluster.is.localnet:8680 --limit 100 --obs-rep white --max-tokens 8192 # job_468 16518514.3
+#fig eval cls s/zcot chess/puzzle c/vllm --addr g137.internal.cluster.is.localnet:8680 --limit 100 --obs-rep fen --max-tokens 8192 # job_468 16518514.4
 
 
 

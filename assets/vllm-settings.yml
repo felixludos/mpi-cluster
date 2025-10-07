@@ -132,7 +132,7 @@ qwen235b-base: # confirmed 2025-07-21 14:05:09
   reasoning-parser: deepseek_r1
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
-qwen235b: # unconfirmed
+qwen235b: # confirmed 2025-10-06 11:43:57
   model: "{hf_dir}/models--Qwen--Qwen3-235B-A22B-Instruct-2507-FP8/snapshots/ba82a1060073fa0ecdc70d7b1922ec071f60cf3e"
   port: 8668
   gpu-memory-utilization: 0.5
@@ -147,11 +147,23 @@ qwen235b-t: # unconfirmed
   model: "{hf_dir}/models--Qwen--Qwen3-235B-A22B-Thinking-2507-FP8/snapshots/c3ce9d7adab3b55a3a673acf6abb02a3310fd48b"
   port: 8666
   gpu-memory-utilization: 0.5
+  max-model-len: 100000
   tensor-parallel-size: 8
   enable-expert-parallel: yes
   enable-reasoning: yes
   reasoning-parser: deepseek_r1
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
+
+qwen235b-t-4gpu: # confirmed 2025-10-06 15:00:13
+  model: "{hf_dir}/models--Qwen--Qwen3-235B-A22B-Thinking-2507-FP8/snapshots/c3ce9d7adab3b55a3a673acf6abb02a3310fd48b"
+  port: 8866
+  gpu-memory-utilization: 0.5
+  max-model-len: 100000
+  tensor-parallel-size: 4
+  enable-expert-parallel: yes
+  enable-reasoning: yes
+  reasoning-parser: deepseek_r1
+  resources: {cpu: 32, ram: 512, gpu: 4, gpu-ram: 150, gpu-name: B200}
 
 qwen-next: # unconfirmed
   model: "{hf_dir}/models--Qwen--Qwen3-Next-80B-A3B-Instruct/snapshots/9c7f2fbe84465e40164a94cc16cd30b6999b0cc7"
@@ -237,7 +249,7 @@ k2: # confirmed 2025-09-20 12:25:27
 # seed oss
 
 
-llama70b: # confirmed
+llama70b: # confirmed 2025-10-06 11:44:33
   # model: meta-llama/Llama-3.3-70B-Instruct
   model: "{hf_dir}/models--meta-llama--Llama-3.3-70B-Instruct/snapshots/6f6073b423013f6a7d4d9f39144961bfbfbc386b"
   dtype: bfloat16
@@ -249,11 +261,11 @@ llama70b: # confirmed
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 32, ram: 256, gpu: 2, gpu-ram: 80}
 
-llama70b-4gpu: # unconfirmed
+llama70b-4gpu: # confirmed 2025-10-06 11:26:50
   # model: meta-llama/Llama-3.3-70B-Instruct
   model: "{hf_dir}/models--meta-llama--Llama-3.3-70B-Instruct/snapshots/6f6073b423013f6a7d4d9f39144961bfbfbc386b"
   dtype: bfloat16
-  port: 8300
+  port: 8301
   # max-model-len: 65536
   tensor-parallel-size: 4
   # enable-auto-tool-choice: yes
@@ -265,7 +277,7 @@ llama70b-8gpu:
   # model: meta-llama/Llama-3.3-70B-Instruct
   model: "{hf_dir}/models--meta-llama--Llama-3.3-70B-Instruct/snapshots/6f6073b423013f6a7d4d9f39144961bfbfbc386b"
   dtype: bfloat16
-  port: 8301
+  port: 8302
   # gpu-memory-utilization: 0.9
   max-model-len: 32768
   max-num-seqs: 8
@@ -275,7 +287,7 @@ llama70b-8gpu:
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 8, ram: 256, gpu: 8, gpu-ram: 20}
 
-llama4-scout: # stale
+llama4-scout: # confirmed 2025-10-06 11:45:55
   # model: meta-llama/Llama-4-Scout-17B-16E-Instruct
   model: "{hf_dir}/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8"
   dtype: bfloat16
@@ -307,7 +319,7 @@ llama4-scout-8gpu: # confirmed 2025-07-25 20:46:21
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
-llama4-mav: # confirmed 2025-07-24 11:32:55
+llama4-mav: # confirmed 2025-10-06 11:45:55
   # model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
   model: "{hf_dir}/models--meta-llama--Llama-4-Maverick-17B-128E-Instruct-FP8/snapshots/94125d2bd83076b21eed33119525e29eaf3894f4"
   max-model-len: 400000
@@ -320,7 +332,7 @@ llama4-mav: # confirmed 2025-07-24 11:32:55
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama4_pythonic.jinja"
   resources: {cpu: 32, ram: 512, gpu: 8, gpu-ram: 75, gpu-name: H100-80}
 
-llama4-scout-2gpu: # unconfirmed
+llama4-scout-2gpu: # confirmed 2025-10-06 11:45:55
   # model: meta-llama/Llama-4-Scout-17B-16E-Instruct
   model: "{hf_dir}/models--meta-llama--Llama-4-Scout-17B-16E-Instruct/snapshots/7dab2f5f854fe665b6b2f1eccbd3c48e5f627ad8"
   dtype: bfloat16
@@ -336,7 +348,7 @@ llama4-scout-2gpu: # unconfirmed
   # chat-template: "{vllm_dir}/examples/tool_chat_template_llama3.1_json.jinja"
   resources: {cpu: 32, ram: 512, gpu: 2, gpu-ram: 150, gpu-name: B200}
 
-llama4-mav-4gpu: # unconfirmed
+llama4-mav-4gpu: # confirmed 2025-10-06 11:38:00
   # model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
   model: "{hf_dir}/models--meta-llama--Llama-4-Maverick-17B-128E-Instruct-FP8/snapshots/94125d2bd83076b21eed33119525e29eaf3894f4"
   max-model-len: 400000
